@@ -1,0 +1,33 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Client/">
+    <Project Path="src/Client/OrderFlow.Client/OrderFlow.Client.csproj" />
+  </Folder>
+  <Folder Name="/src/Contracts/">
+    <Project Path="src/Contracts/OrderFlow.Contracts/OrderFlow.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/src/Inventory/">
+    <Project Path="src/Inventory/Inventory.Api/Inventory.Api.csproj" />
+    <Project Path="src/Inventory/Inventory.Application/Inventory.Application.csproj" />
+    <Project Path="src/Inventory/Inventory.Domain/Inventory.Domain.csproj" />
+    <Project Path="src/Inventory/Inventory.Infrastructure/Inventory.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Orders/">
+    <Project Path="src/Orders/Orders.Api/Orders.Api.csproj" />
+    <Project Path="src/Orders/Orders.Application/Orders.Application.csproj" />
+    <Project Path="src/Orders/Orders.Domain/Orders.Domain.csproj" />
+    <Project Path="src/Orders/Orders.Infrastructure/Orders.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Payments/">
+    <Project Path="src/Payments/Payments.Api/Payments.Api.csproj" />
+    <Project Path="src/Payments/Payments.Application/Payments.Application.csproj" />
+    <Project Path="src/Payments/Payments.Domain/Payments.Domain.csproj" />
+    <Project Path="src/Payments/Payments.Infrastructure/Payments.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Architecture.Tests/Architecture.Tests.csproj" />
+    <Project Path="tests/Inventory.UnitTests/Inventory.UnitTests.csproj" />
+    <Project Path="tests/Orders.UnitTests/Orders.UnitTests.csproj" />
+    <Project Path="tests/Payments.UnitTests/Payments.UnitTests.csproj" />
+  </Folder>
+</Solution>
