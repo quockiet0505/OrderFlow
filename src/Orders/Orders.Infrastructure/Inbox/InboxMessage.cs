@@ -1,6 +1,6 @@
 using System;
 
-namespace Inventory.Domain.Entities;
+namespace Orders.Infrastructure.Inbox;
 
 public class InboxMessage
 {

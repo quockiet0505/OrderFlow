@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Payments.Domain.Entities;
 using Payments.Domain.Enums;
+using Payments.Infrastructure.Inbox;
+using Payments.Infrastructure.Outbox;
 
 namespace Payments.Infrastructure.Persistence;
 

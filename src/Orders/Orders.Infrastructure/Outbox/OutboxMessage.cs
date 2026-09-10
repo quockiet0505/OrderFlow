@@ -1,6 +1,6 @@
 using System;
 
-namespace Payments.Domain.Entities;
+namespace Orders.Infrastructure.Outbox;
 
 public class OutboxMessage
 {

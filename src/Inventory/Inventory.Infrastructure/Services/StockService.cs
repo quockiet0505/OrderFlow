@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Inventory.Application.DTOs;
-using Inventory.Application.Services;
+using Inventory.Application.Abstractions;
 using Inventory.Domain.Entities;
 using Inventory.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;

@@ -1,6 +1,6 @@
 using System;
 
-namespace Payments.Domain.Entities;
+namespace Inventory.Infrastructure.Inbox;
 
 public class InboxMessage
 {

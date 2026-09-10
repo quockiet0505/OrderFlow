@@ -6,7 +6,3 @@ public record StockItemDto(
     int QuantityReserved,
     int Available
 );
-
-public record AdjustStockRequest(
-    int Quantity
-);

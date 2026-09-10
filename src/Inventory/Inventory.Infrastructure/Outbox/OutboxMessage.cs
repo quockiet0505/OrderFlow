@@ -1,6 +1,6 @@
 using System;
 
-namespace Inventory.Domain.Entities;
+namespace Inventory.Infrastructure.Outbox;
 
 public class OutboxMessage
 {

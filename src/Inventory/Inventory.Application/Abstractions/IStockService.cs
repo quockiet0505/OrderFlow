@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Inventory.Application.DTOs;
 
-namespace Inventory.Application.Services;
+namespace Inventory.Application.Abstractions;
 
 public interface IStockService
 {

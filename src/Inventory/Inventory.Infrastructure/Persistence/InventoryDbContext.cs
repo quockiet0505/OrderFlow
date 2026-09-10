@@ -1,5 +1,7 @@
 using Inventory.Domain.Entities;
 using Inventory.Domain.Enums;
+using Inventory.Infrastructure.Inbox;
+using Inventory.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
 
 namespace Inventory.Infrastructure.Persistence;

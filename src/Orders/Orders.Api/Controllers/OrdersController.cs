@@ -5,8 +5,10 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using OrderFlow.Contracts.DTOs;
 using OrderFlow.Contracts.Events;
+using Orders.Application.DTOs;
 using Orders.Domain.Entities;
 using Orders.Domain.Enums;
+using Orders.Infrastructure.Outbox;
 using Orders.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -158,13 +160,3 @@ public class OrdersController : ControllerBase
     }
 }
 
-public record CreateOrderApiRequest(
-    string CustomerId,
-    List<CreateOrderLineApiRequest> Lines
-);
-
-public record CreateOrderLineApiRequest(
-    string Sku,
-    int Quantity,
-    decimal UnitPrice
-);

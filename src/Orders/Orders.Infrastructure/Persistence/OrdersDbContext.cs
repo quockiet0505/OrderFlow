@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Orders.Domain.Entities;
 using Orders.Domain.Enums;
+using Orders.Infrastructure.Inbox;
+using Orders.Infrastructure.Outbox;
 
 namespace Orders.Infrastructure.Persistence;
 

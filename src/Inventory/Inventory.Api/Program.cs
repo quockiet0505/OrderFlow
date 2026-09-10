@@ -1,4 +1,4 @@
-using Inventory.Application.Services;
+using Inventory.Application.Abstractions;
 using Inventory.Infrastructure.Persistence;
 using Inventory.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;

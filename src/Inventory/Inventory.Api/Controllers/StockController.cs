@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Inventory.Application.DTOs;
-using Inventory.Application.Services;
+using Inventory.Application.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Inventory.Api.Controllers;
