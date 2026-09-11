@@ -26,7 +26,7 @@ public class OrdersController : ControllerBase
         _dbContext = dbContext;
     }
 
-    // POST /orders
+    // Create new order
     [HttpPost]
     public async Task<IActionResult> CreateOrder([FromBody] CreateOrderApiRequest request)
     {
@@ -100,7 +100,7 @@ public class OrdersController : ControllerBase
         });
     }
 
-    // GET /orders/{id}
+    // Get order by ID
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetOrderById(Guid id)
     {
@@ -131,7 +131,7 @@ public class OrdersController : ControllerBase
         });
     }
 
-    // GET /orders?customerId={customerId}
+    // Get orders by customer ID
     [HttpGet]
     public async Task<IActionResult> GetOrdersByCustomer([FromQuery] string customerId)
     {

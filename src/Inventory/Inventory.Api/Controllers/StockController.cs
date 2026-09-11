@@ -17,7 +17,7 @@ public class StockController : ControllerBase
         _stockService = stockService;
     }
 
-    // GET /stock
+    // Get stock items
     [HttpGet]
     public async Task<ActionResult<List<StockItemDto>>> GetStock()
     {
@@ -25,7 +25,7 @@ public class StockController : ControllerBase
         return Ok(stock);
     }
 
-    // POST /stock/{sku}/adjust
+    // Adjust stock quantity
     [HttpPost("{sku}/adjust")]
     public async Task<ActionResult<StockItemDto>> AdjustStock(string sku, [FromBody] AdjustStockRequest request)
     {

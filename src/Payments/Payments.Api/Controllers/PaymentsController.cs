@@ -17,7 +17,7 @@ public class PaymentsController : ControllerBase
         _dbContext = dbContext;
     }
 
-    // GET /payments/{orderId}
+    // Get payment by order ID
     [HttpGet("{orderId:guid}")]
     public async Task<IActionResult> GetPaymentByOrderId(Guid orderId)
     {

@@ -15,7 +15,7 @@ public class HealthController : ControllerBase
         _dbContext = dbContext;
     }
 
-    // GET /health
+    // Health check
     [HttpGet]
     public async Task<IActionResult> GetHealth()
     {
