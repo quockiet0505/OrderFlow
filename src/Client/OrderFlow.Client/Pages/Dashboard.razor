@@ -1,0 +1,139 @@
+@page "/dashboard"
+@using System.Net.Http.Json
+@inject IHttpClientFactory ClientFactory
+
+<PageTitle>Dashboard</PageTitle>
+
+<h1>Dashboard</h1>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                Current Stock Levels
+            </div>
+            <div class="card-body p-0">
+                @if (_stockItems == null)
+                {
+                    <div class="p-3"><em>Loading stock...</em></div>
+                }
+                else
+                {
+                    <table class="table table-striped table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>SKU</th>
+                                <th>On Hand</th>
+                                <th>Reserved</th>
+                                <th>Available</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in _stockItems)
+                            {
+                                <tr>
+                                    <td><strong>@item.Sku</strong></td>
+                                    <td>@item.QuantityOnHand</td>
+                                    <td><span class="text-warning">@item.QuantityReserved</span></td>
+                                    <td><span class="text-success">@item.Available</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                Recent Orders (CUST-001)
+            </div>
+            <div class="card-body p-0">
+                @if (_orders == null)
+                {
+                    <div class="p-3"><em>Loading orders...</em></div>
+                }
+                else
+                {
+                    <table class="table table-striped table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Status</th>
+                                <th>Total</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in _orders)
+                            {
+                                <tr>
+                                    <td><small>@order.Id.ToString().Substring(0, 8)...</small></td>
+                                    <td>
+                                        <span class="badge @GetStatusBadgeClass(order.Status)">@order.Status</span>
+                                    </td>
+                                    <td>@order.Total</td>
+                                    <td><small>@order.CreatedAt.ToLocalTime().ToString("HH:mm:ss")</small></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<StockItemDto>? _stockItems;
+    private List<OrderDto>? _orders;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var inventoryClient = ClientFactory.CreateClient("InventoryApi");
+        var ordersClient = ClientFactory.CreateClient("OrdersApi");
+
+        try
+        {
+            _stockItems = await inventoryClient.GetFromJsonAsync<List<StockItemDto>>("/stock");
+            _orders = await ordersClient.GetFromJsonAsync<List<OrderDto>>("/orders?customerId=CUST-001");
+            
+            if (_orders != null)
+            {
+                _orders = _orders.OrderByDescending(o => o.CreatedAt).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading dashboard: {ex.Message}");
+        }
+    }
+
+    private string GetStatusBadgeClass(string status) => status switch
+    {
+        "Confirmed" => "bg-success",
+        "Cancelled" => "bg-danger",
+        "Charging" => "bg-warning text-dark",
+        "Reserving" => "bg-info text-dark",
+        "Pending" => "bg-secondary",
+        _ => "bg-secondary"
+    };
+
+    public class StockItemDto
+    {
+        public string Sku { get; set; } = "";
+        public int QuantityOnHand { get; set; }
+        public int QuantityReserved { get; set; }
+        public int Available { get; set; }
+    }
+
+    public class OrderDto
+    {
+        public Guid Id { get; set; }
+        public string Status { get; set; } = "";
+        public decimal Total { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+}

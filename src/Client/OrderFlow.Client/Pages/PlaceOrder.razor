@@ -1,0 +1,179 @@
+@page "/place-order"
+@using System.Net.Http.Json
+@using System.Threading
+@implements IDisposable
+@inject IHttpClientFactory ClientFactory
+
+<PageTitle>Place Order</PageTitle>
+
+<h1>Place Order</h1>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                Create New Order
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">SKU:</label>
+                    <input class="form-control" @bind="_sku" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Quantity:</label>
+                    <input type="number" class="form-control" @bind="_quantity" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Unit Price (Tip: Use .99 for Payment Failure):</label>
+                    <input type="number" step="0.01" class="form-control" @bind="_unitPrice" />
+                </div>
+
+                <button class="btn btn-primary w-100" @onclick="SubmitOrder" disabled="@_isSubmitting">
+                    @if (_isSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        <span> Submitting...</span>
+                    }
+                    else
+                    {
+                        <span>Place Order</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        @if (_currentOrderId != null)
+        {
+            <div class="card border-info mt-3 mt-md-0">
+                <div class="card-header bg-info text-white">
+                    Saga Tracker
+                </div>
+                <div class="card-body">
+                    <p><strong>Order ID:</strong> @_currentOrderId</p>
+                    <p>
+                        <strong>Status:</strong> 
+                        <span class="badge @GetStatusBadgeClass(_currentStatus)">@_currentStatus</span>
+                    </p>
+                    <small class="text-muted">(Auto-refreshing every 2 seconds...)</small>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string _sku = "WIDGET-01";
+    private int _quantity = 1;
+    private decimal _unitPrice = 150000;
+    
+    private bool _isSubmitting = false;
+    private Guid? _currentOrderId = null;
+    private string _currentStatus = "None";
+    
+    private Timer? _pollingTimer;
+
+    private async Task SubmitOrder()
+    {
+        _isSubmitting = true;
+        _currentOrderId = null;
+        
+        var ordersClient = ClientFactory.CreateClient("OrdersApi");
+        
+        var request = new
+        {
+            CustomerId = "CUST-001",
+            Lines = new[]
+            {
+                new { Sku = _sku, Quantity = _quantity, UnitPrice = _unitPrice }
+            }
+        };
+
+        try
+        {
+            var response = await ordersClient.PostAsJsonAsync("/orders", request);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<OrderResponse>();
+                if (result != null)
+                {
+                    _currentOrderId = result.OrderId;
+                    _currentStatus = result.Status;
+                    StartPolling();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error placing order: {ex.Message}");
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void StartPolling()
+    {
+        _pollingTimer?.Dispose();
+        _pollingTimer = new Timer(async _ =>
+        {
+            await CheckOrderStatus();
+            await InvokeAsync(StateHasChanged);
+        }, null, 0, 2000);
+    }
+
+    private async Task CheckOrderStatus()
+    {
+        if (_currentOrderId == null) return;
+        
+        var ordersClient = ClientFactory.CreateClient("OrdersApi");
+        try
+        {
+            var response = await ordersClient.GetFromJsonAsync<OrderDetailsResponse>($"/orders/{_currentOrderId}");
+            if (response != null)
+            {
+                _currentStatus = response.Status;
+                
+                // Stop polling if reached terminal state
+                if (_currentStatus == "Confirmed" || _currentStatus == "Cancelled")
+                {
+                    _pollingTimer?.Change(Timeout.Infinite, 0);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error polling order: {ex.Message}");
+        }
+    }
+
+    private string GetStatusBadgeClass(string status) => status switch
+    {
+        "Confirmed" => "bg-success",
+        "Cancelled" => "bg-danger",
+        "Charging" => "bg-warning text-dark",
+        "Reserving" => "bg-info text-dark",
+        "Pending" => "bg-secondary",
+        _ => "bg-secondary"
+    };
+
+    public void Dispose()
+    {
+        _pollingTimer?.Dispose();
+    }
+
+    public class OrderResponse
+    {
+        public Guid OrderId { get; set; }
+        public string Status { get; set; } = "";
+    }
+    
+    public class OrderDetailsResponse
+    {
+        public string Status { get; set; } = "";
+        public bool ReservationCompleted { get; set; }
+        public bool PaymentCompleted { get; set; }
+    }
+}
