@@ -24,6 +24,9 @@
     <Project Path="src/Payments/Payments.Domain/Payments.Domain.csproj" />
     <Project Path="src/Payments/Payments.Infrastructure/Payments.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/Shared.Infrastructure/Shared.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Architecture.Tests/Architecture.Tests.csproj" />
     <Project Path="tests/Inventory.Tests/Inventory.Tests.csproj" />
