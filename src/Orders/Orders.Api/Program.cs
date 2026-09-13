@@ -13,6 +13,10 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<OrdersDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+builder.Services.AddHostedService<Orders.Infrastructure.BackgroundServices.OutboxProcessorService>();
+builder.Services.AddHostedService<Orders.Infrastructure.BackgroundServices.ReservationEventConsumerService>();
+builder.Services.AddHostedService<Orders.Infrastructure.BackgroundServices.PaymentEventConsumerService>();
+
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>

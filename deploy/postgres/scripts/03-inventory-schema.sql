@@ -1,7 +1,4 @@
--- =============================================================================
 -- Database: orderflow_inventory (Inventory Microservice)
--- =============================================================================
-\c orderflow_inventory;
 
 CREATE TABLE IF NOT EXISTS stock_items (
     sku VARCHAR(50) PRIMARY KEY,

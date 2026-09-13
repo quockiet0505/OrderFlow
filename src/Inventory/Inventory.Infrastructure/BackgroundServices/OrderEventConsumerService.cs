@@ -27,7 +27,7 @@ public class OrderEventConsumerService : PulsarConsumerBase
         ILogger<OrderEventConsumerService> logger)
         : base(
             configuration["Pulsar:ServiceUrl"] ?? "pulsar://localhost:6650",
-            "persistent://public/default/orders.order-placed",
+            "persistent://public/default/order-events",
             "inventory-order-sub",
             logger)
     {

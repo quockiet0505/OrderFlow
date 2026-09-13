@@ -1,7 +1,6 @@
--- =============================================================================
+
 -- Database: orderflow_payments (Payments Microservice)
--- =============================================================================
-\c orderflow_payments;
+
 
 CREATE TABLE IF NOT EXISTS payments (
     id UUID PRIMARY KEY,

@@ -1,7 +1,5 @@
--- =============================================================================
 -- Database: orderflow_orders (Orders Microservice)
--- =============================================================================
-\c orderflow_orders;
+
 
 CREATE TABLE IF NOT EXISTS orders (
     id UUID PRIMARY KEY,

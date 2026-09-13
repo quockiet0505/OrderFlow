@@ -15,6 +15,9 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<InventoryDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+builder.Services.AddHostedService<Inventory.Infrastructure.BackgroundServices.OutboxProcessorService>();
+builder.Services.AddHostedService<Inventory.Infrastructure.BackgroundServices.OrderEventConsumerService>();
+
 builder.Services.AddScoped<IStockService, StockService>();
 
 builder.Services.AddCors(options =>
