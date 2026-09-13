@@ -53,6 +53,20 @@ public abstract class PulsarConsumerBase : BackgroundService
             catch (Exception ex)
             {
                 Logger.LogError(ex, "Error processing message from topic {Topic}", _topic);
+                
+                // Fallback DLQ logic
+                if (message.RedeliveryCount >= 3)
+                {
+                    Logger.LogWarning("Message exceeded max redelivery count. Sending to DLQ.");
+                    await using var dlqProducer = client.NewProducer().Topic($"{_topic}-dlq").Create();
+                    await dlqProducer.Send(message.Data, stoppingToken);
+                    await consumer.Acknowledge(message, stoppingToken);
+                }
+                else
+                {
+                    // Delay before redelivery in case of transient errors like DB lock
+                    await Task.Delay(1000, stoppingToken); 
+                }
             }
         }
     }

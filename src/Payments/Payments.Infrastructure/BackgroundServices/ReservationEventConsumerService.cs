@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,16 +40,13 @@ public class ReservationEventConsumerService : PulsarConsumerBase
         var reservationEvent = JsonSerializer.Deserialize<ReservationSucceededEvent>(messageJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
         if (reservationEvent == null || reservationEvent.EventId == Guid.Empty) return;
         
-        // Wait, if it's a Failed event we should skip or handle it. For now, check if it has OrderId
+        //  check if it has orderId
         if (reservationEvent.OrderId == Guid.Empty) return;
 
-        // Verify if it's a Success Event by checking if a Failed Event property (like Reason) is null, or just assume it is.
-        // Actually, ReservationSucceededEvent only has OrderId.
-        // To be safer, we could parse the root to check "Reason" property.
         using var doc = JsonDocument.Parse(messageJson);
         if (doc.RootElement.TryGetProperty("Reason", out _)) 
         {
-            // It's a ReservationFailedEvent, Payments doesn't care.
+            // It's a ReservationFailedEven
             return;
         }
 
@@ -57,8 +55,27 @@ public class ReservationEventConsumerService : PulsarConsumerBase
 
         dbContext.InboxMessages.Add(new InboxMessage { EventId = reservationEvent.EventId });
 
-        // Process Payment (Mock success)
-        var outEvent = new PaymentSucceededEvent(reservationEvent.OrderId);
+        var totalAmount = reservationEvent.Lines.Sum(x => x.Quantity * x.UnitPrice);
+        IntegrationEvent outEvent;
+        
+        var payment = new Payments.Domain.Entities.Payment
+        {
+            OrderId = reservationEvent.OrderId,
+            Amount = totalAmount,
+            Status = Payments.Domain.Enums.PaymentStatus.Succeeded
+        };
+
+        if (totalAmount % 1 == 0.99m)
+        {
+            payment.Status = Payments.Domain.Enums.PaymentStatus.Failed;
+            outEvent = new PaymentFailedEvent(reservationEvent.OrderId, "Fake gateway rule: amount ends in .99");
+        }
+        else
+        {
+            outEvent = new PaymentSucceededEvent(reservationEvent.OrderId, payment.Id, totalAmount);
+        }
+
+        dbContext.Payments.Add(payment);
 
         dbContext.OutboxMessages.Add(new LocalOutbox
         {

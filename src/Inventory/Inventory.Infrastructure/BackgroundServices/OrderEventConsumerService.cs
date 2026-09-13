@@ -79,7 +79,7 @@ public class OrderEventConsumerService : PulsarConsumerBase
                     Status = ReservationStatus.Active
                 });
             }
-            outEvent = new ReservationSucceededEvent(orderEvent.OrderId);
+            outEvent = new ReservationSucceededEvent(orderEvent.OrderId, Guid.NewGuid().ToString(), orderEvent.Lines.Select(l => new OrderFlow.Contracts.DTOs.ReservedLineDto(l.Sku, l.Quantity, l.UnitPrice)).ToList());
         }
         else
         {

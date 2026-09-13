@@ -17,6 +17,7 @@ builder.Services.AddDbContext<InventoryDbContext>(options =>
 
 builder.Services.AddHostedService<Inventory.Infrastructure.BackgroundServices.OutboxProcessorService>();
 builder.Services.AddHostedService<Inventory.Infrastructure.BackgroundServices.OrderEventConsumerService>();
+builder.Services.AddHostedService<Inventory.Infrastructure.BackgroundServices.PaymentEventConsumerService>();
 
 builder.Services.AddScoped<IStockService, StockService>();
 

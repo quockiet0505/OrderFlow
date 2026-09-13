@@ -25,8 +25,8 @@ public class InventoryDbContext : DbContext
             entity.ToTable("stock_items");
             entity.HasKey(e => e.Sku);
             entity.Property(e => e.Sku).HasColumnName("sku").HasMaxLength(50);
-            entity.Property(e => e.QuantityOnHand).HasColumnName("quantity_on_hand").IsRequired();
-            entity.Property(e => e.QuantityReserved).HasColumnName("quantity_reserved").IsRequired();
+            entity.Property(e => e.QuantityOnHand).HasColumnName("quantity_on_hand").IsRequired().IsConcurrencyToken();
+            entity.Property(e => e.QuantityReserved).HasColumnName("quantity_reserved").IsRequired().IsConcurrencyToken();
             entity.Ignore(e => e.Available);
         });
 

@@ -1,17 +1,20 @@
 using System;
+using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Inventory.Domain.Entities;
+using Inventory.Domain.Enums;
+using Inventory.Infrastructure.Inbox;
+using Inventory.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Orders.Domain.Enums;
-using Orders.Infrastructure.Inbox;
-using Orders.Infrastructure.Persistence;
+using OrderFlow.Contracts.Events;
 using Shared.Infrastructure.Messaging;
 
-namespace Orders.Infrastructure.BackgroundServices;
+namespace Inventory.Infrastructure.BackgroundServices;
 
 public class PaymentEventConsumerService : PulsarConsumerBase
 {
@@ -24,7 +27,7 @@ public class PaymentEventConsumerService : PulsarConsumerBase
         : base(
             configuration["Pulsar:ServiceUrl"] ?? "pulsar://localhost:6650",
             "persistent://public/default/payment-events",
-            "orders-payment-sub",
+            "inventory-payment-sub",
             logger)
     {
         _serviceProvider = serviceProvider;
@@ -33,7 +36,7 @@ public class PaymentEventConsumerService : PulsarConsumerBase
     protected override async Task ConsumeMessageAsync(string topic, string messageJson, CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<OrdersDbContext>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
 
         var doc = JsonDocument.Parse(messageJson);
         var root = doc.RootElement;
@@ -46,26 +49,32 @@ public class PaymentEventConsumerService : PulsarConsumerBase
 
         dbContext.InboxMessages.Add(new InboxMessage { EventId = eventId });
 
-        var order = await dbContext.Orders.Include(x => x.SagaState).FirstOrDefaultAsync(x => x.Id == orderId, cancellationToken);
-        if (order != null && order.SagaState != null)
+        var isFailed = root.TryGetProperty("Reason", out _);
+        
+        var reservations = await dbContext.Reservations
+            .Where(x => x.OrderId == orderId && x.Status == ReservationStatus.Active)
+            .ToListAsync(cancellationToken);
+
+        foreach (var reservation in reservations)
         {
-            // It's PaymentFailedEvent
-            if (root.TryGetProperty("Reason", out _)) 
+            var item = await dbContext.StockItems.FirstOrDefaultAsync(x => x.Sku == reservation.Sku, cancellationToken);
+            if (item != null)
             {
-                order.Status = OrderStatus.Cancelled;
-            }
-            // // It's PaymentSucceededEvent
-            else 
-            {
-                order.SagaState.PaymentCompleted = true;
-                if (order.SagaState.ReservationCompleted)
+                if (isFailed) // Compensation
                 {
-                    order.Status = OrderStatus.Confirmed;
+                    reservation.Status = ReservationStatus.Released;
+                    item.QuantityReserved -= reservation.Quantity;
+                }
+                else // Succeeded
+                {
+                    reservation.Status = ReservationStatus.Consumed;
+                    item.QuantityReserved -= reservation.Quantity;
+                    item.QuantityOnHand -= reservation.Quantity; // Permanently consume stock
                 }
             }
-            await dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        Logger.LogInformation("Orders Saga processed payment event for OrderId: {OrderId}", orderId);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        Logger.LogInformation("Inventory processed payment event for OrderId: {OrderId}. Failed: {IsFailed}", orderId, isFailed);
     }
 }
