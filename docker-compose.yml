@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - ./deploy/postgres/scripts:/docker-entrypoint-initdb.d
     healthcheck:
@@ -14,3 +14,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+      
+  pulsar:
+    image: apachepulsar/pulsar:latest
+    container_name: orderflow-pulsar
+    ports:
+      - "6650:6650"
+      - "8080:8080"
+    command: bin/pulsar standalone

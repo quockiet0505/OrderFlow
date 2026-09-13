@@ -10,7 +10,7 @@ builder.Services.AddOpenApi();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? builder.Configuration["DB_CONNECTION_STRING"]
-    ?? "Host=localhost;Port=5432;Database=orderflow_inventory;Username=postgres;Password=postgres";
+    ?? "Host=localhost;Port=5433;Database=orderflow_inventory;Username=postgres;Password=postgres";
 
 builder.Services.AddDbContext<InventoryDbContext>(options =>
     options.UseNpgsql(connectionString));

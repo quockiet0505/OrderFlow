@@ -8,7 +8,7 @@ builder.Services.AddOpenApi();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? builder.Configuration["DB_CONNECTION_STRING"]
-    ?? "Host=localhost;Port=5432;Database=orderflow_payments;Username=postgres;Password=postgres";
+    ?? "Host=localhost;Port=5433;Database=orderflow_payments;Username=postgres;Password=postgres";
 
 builder.Services.AddDbContext<PaymentsDbContext>(options =>
     options.UseNpgsql(connectionString));
