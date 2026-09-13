@@ -3,8 +3,8 @@ services:
     image: postgres:16-alpine
     container_name: orderflow-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
       - "5433:5432"
     volumes:
@@ -22,3 +22,56 @@ services:
       - "6650:6650"
       - "8080:8080"
     command: bin/pulsar standalone
+
+  orders-api:
+    build:
+      context: .
+      dockerfile: src/Orders/Dockerfile
+    container_name: orderflow-orders-api
+    ports:
+      - "5001:5001"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DB_CONNECTION_STRING=Host=postgres;Port=5432;Database=orderflow_orders;Username=${DB_USER:-postgres};Password=${DB_PASSWORD:-postgres}
+      - Pulsar__ServiceUrl=${PULSAR_URL:-pulsar://pulsar:6650}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  inventory-api:
+    build:
+      context: .
+      dockerfile: src/Inventory/Dockerfile
+    container_name: orderflow-inventory-api
+    ports:
+      - "5002:5002"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DB_CONNECTION_STRING=Host=postgres;Port=5432;Database=orderflow_inventory;Username=${DB_USER:-postgres};Password=${DB_PASSWORD:-postgres}
+      - Pulsar__ServiceUrl=${PULSAR_URL:-pulsar://pulsar:6650}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  payments-api:
+    build:
+      context: .
+      dockerfile: src/Payments/Dockerfile
+    container_name: orderflow-payments-api
+    ports:
+      - "5003:5003"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DB_CONNECTION_STRING=Host=postgres;Port=5432;Database=orderflow_payments;Username=${DB_USER:-postgres};Password=${DB_PASSWORD:-postgres}
+      - Pulsar__ServiceUrl=${PULSAR_URL:-pulsar://pulsar:6650}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  blazor-client:
+    build:
+      context: .
+      dockerfile: src/Client/Dockerfile
+    container_name: orderflow-blazor-client
+    ports:
+      - "5000:80"

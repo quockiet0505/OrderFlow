@@ -1,9 +1,11 @@
-FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build
 WORKDIR /app
+
 COPY . .
-RUN dotnet publish src/Client/OrderFlow.Client/OrderFlow.Client.csproj -c Release -o /app/out
+RUN dotnet publish "src/Client/OrderFlow.Client/OrderFlow.Client.csproj" -c Release -o /app/out
 
-EXPOSE 5000
-ENV ASPNETCORE_URLS=http://+:5000
+FROM nginx:alpine
+WORKDIR /usr/share/nginx/html
+COPY --from=build /app/out/wwwroot .
 
-ENTRYPOINT ["dotnet", "/app/out/OrderFlow.Client.dll"]
+EXPOSE 80
