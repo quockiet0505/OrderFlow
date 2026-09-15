@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Buffers;
 using DotPulsar;
 using DotPulsar.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -46,7 +47,8 @@ public abstract class PulsarConsumerBase : BackgroundService
         {
             try
             {
-                var json = Encoding.UTF8.GetString(message.Data.FirstSpan);
+                var data = message.Data.ToArray();
+                var json = Encoding.UTF8.GetString(data);
                 await ConsumeMessageAsync(_topic, json, stoppingToken);
                 await consumer.Acknowledge(message, stoppingToken);
             }
