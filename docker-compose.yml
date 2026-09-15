@@ -28,12 +28,11 @@ services:
       context: .
       dockerfile: src/Orders/Dockerfile
     container_name: orderflow-orders-api
-    env_file:
-      - ./src/Orders/.env
     ports:
       - "5001:5001"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=orderflow_orders;Username=${DB_USER:-postgres};Password=${DB_PASSWORD:-postgres}
       - Pulsar__ServiceUrl=${PULSAR_URL:-pulsar://pulsar:6650}
     depends_on:
       postgres:
@@ -44,12 +43,11 @@ services:
       context: .
       dockerfile: src/Inventory/Dockerfile
     container_name: orderflow-inventory-api
-    env_file:
-      - ./src/Inventory/.env
     ports:
       - "5002:5002"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=orderflow_inventory;Username=${DB_USER:-postgres};Password=${DB_PASSWORD:-postgres}
       - Pulsar__ServiceUrl=${PULSAR_URL:-pulsar://pulsar:6650}
     depends_on:
       postgres:
@@ -60,12 +58,11 @@ services:
       context: .
       dockerfile: src/Payments/Dockerfile
     container_name: orderflow-payments-api
-    env_file:
-      - ./src/Payments/.env
     ports:
       - "5003:5003"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=orderflow_payments;Username=${DB_USER:-postgres};Password=${DB_PASSWORD:-postgres}
       - Pulsar__ServiceUrl=${PULSAR_URL:-pulsar://pulsar:6650}
     depends_on:
       postgres:
