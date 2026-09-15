@@ -46,7 +46,7 @@ public class ReservationEventConsumerService : PulsarConsumerBase
         using var doc = JsonDocument.Parse(messageJson);
         if (doc.RootElement.TryGetProperty("Reason", out _)) 
         {
-            // It's a ReservationFailedEven
+            //  ReservationFailedEven
             return;
         }
 

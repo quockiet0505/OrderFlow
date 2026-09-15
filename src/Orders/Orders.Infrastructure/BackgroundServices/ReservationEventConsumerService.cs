@@ -50,16 +50,16 @@ public class ReservationEventConsumerService : PulsarConsumerBase
         var order = await dbContext.Orders.Include(x => x.SagaState).FirstOrDefaultAsync(x => x.Id == orderId, cancellationToken);
         if (order != null && order.SagaState != null)
         {
-            // // It's ReservationFailedEvent
+            // ReservationFailedEvent
             if (root.TryGetProperty("Reason", out _)) 
             {
                 order.Status = OrderStatus.Cancelled;
             }
-            // // It's ReservationSucceededEvent
+            //  ReservationSucceededEvent
             else 
             {
                 order.SagaState.ReservationCompleted = true;
-                order.Status = OrderStatus.Charging; // PDF requirement
+                order.Status = OrderStatus.Charging; 
                 if (order.SagaState.PaymentCompleted)
                 {
                     order.Status = OrderStatus.Confirmed;
