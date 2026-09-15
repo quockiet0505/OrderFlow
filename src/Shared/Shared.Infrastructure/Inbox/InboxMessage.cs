@@ -1,6 +1,7 @@
 using System;
+using System.Text.Json;
 
-namespace Payments.Infrastructure.Inbox;
+namespace Shared.Infrastructure.Inbox;
 
 public class InboxMessage
 {

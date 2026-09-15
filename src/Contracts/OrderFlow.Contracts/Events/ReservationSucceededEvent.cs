@@ -7,6 +7,8 @@ namespace OrderFlow.Contracts.Events;
 public record ReservationSucceededEvent : IntegrationEvent
 {
     public string ReservationId { get; init; } = string.Empty;
+
+    // new List<ReservedLineDto>()
     public List<ReservedLineDto> Lines { get; init; } = new();
 
     public ReservationSucceededEvent() { }

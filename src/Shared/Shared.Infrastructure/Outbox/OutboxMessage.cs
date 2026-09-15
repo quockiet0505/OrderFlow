@@ -13,8 +13,3 @@ public class OutboxMessage
     public string? Error { get; set; }
 }
 
-public class InboxMessage
-{
-    public Guid EventId { get; set; }
-    public DateTime ProcessedAt { get; set; } = DateTime.UtcNow;
-}
