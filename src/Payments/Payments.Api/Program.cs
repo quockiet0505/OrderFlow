@@ -28,7 +28,7 @@ var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    await DatabaseInitializer.EnsureDatabaseCreatedAsync(connectionString);
+    await Shared.Infrastructure.Persistence.DatabaseInitializer.EnsureDatabaseCreatedAsync(connectionString);
     var dbContext = scope.ServiceProvider.GetRequiredService<PaymentsDbContext>();
     await dbContext.Database.MigrateAsync();
 }

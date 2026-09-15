@@ -10,6 +10,7 @@
     <PackageReference Include="DotPulsar" Version="5.3.3" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.12" />
+    <PackageReference Include="Npgsql" Version="10.0.0" />
   </ItemGroup>
 
 </Project>

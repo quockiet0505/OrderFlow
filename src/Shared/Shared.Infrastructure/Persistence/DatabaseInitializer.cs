@@ -1,6 +1,8 @@
+using System;
+using System.Threading.Tasks;
 using Npgsql;
 
-namespace Inventory.Infrastructure.Persistence;
+namespace Shared.Infrastructure.Persistence;
 
 public static class DatabaseInitializer
 {
