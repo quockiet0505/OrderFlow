@@ -8,7 +8,7 @@ builder.Services.AddOpenApi();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? builder.Configuration["DB_CONNECTION_STRING"]
-    ?? "Host=localhost;Port=5433;Database=orderflow_orders;Username=postgres;Password=postgres";
+    ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
 builder.Services.AddDbContext<OrdersDbContext>(options =>
     options.UseNpgsql(connectionString));
