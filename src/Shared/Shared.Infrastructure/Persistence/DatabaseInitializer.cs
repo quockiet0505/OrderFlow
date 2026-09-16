@@ -20,7 +20,13 @@ public static class DatabaseInitializer
         await connection.OpenAsync();
 
         await using var checkCmd = connection.CreateCommand();
-        checkCmd.CommandText = $"SELECT 1 FROM pg_database WHERE datname = '{targetDb}'";
+        if(!Regex.IsMatch(targetDb, @"^[a-zA-Z0-9_]+$"))
+        {
+            throw new InvalidOperationException("Invalid database name. Only alphanumeric characters and underscores are allowed.");
+        }
+        checkCmd.CommandText = $"SELECT 1 FROM pg_database WHERE datname = @targetDb";
+        checkCmd.Parameters.AddWithValue("@targetDb", targetDb);
+        
         var exists = await checkCmd.ExecuteScalarAsync();
 
         if (exists == null)
