@@ -6,7 +6,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Orders.Domain.Enums;
+using OrderFlow.Contracts.Events;
+using Orders.Application.Handlers;
 using Orders.Infrastructure.Inbox;
 using Orders.Infrastructure.Persistence;
 using Shared.Infrastructure.Messaging;
@@ -34,38 +35,36 @@ public class PaymentEventConsumerService : PulsarConsumerBase
     {
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<OrdersDbContext>();
+        var sagaHandler = scope.ServiceProvider.GetRequiredService<IOrderSagaHandler>();
 
-        var doc = JsonDocument.Parse(messageJson);
+        using var doc = JsonDocument.Parse(messageJson);
         var root = doc.RootElement;
         
         if (!root.TryGetProperty("EventId", out var eventIdProp) || !Guid.TryParse(eventIdProp.GetString(), out var eventId)) return;
-        if (!root.TryGetProperty("OrderId", out var orderIdProp) || !Guid.TryParse(orderIdProp.GetString(), out var orderId)) return;
 
         var exists = await dbContext.InboxMessages.AnyAsync(x => x.EventId == eventId, cancellationToken);
         if (exists) return;
 
-        dbContext.InboxMessages.Add(new InboxMessage { EventId = eventId });
+        dbContext.InboxMessages.Add(new InboxMessage { EventId = eventId, ProcessedAt = DateTime.UtcNow });
+        await dbContext.SaveChangesAsync(cancellationToken);
 
-        var order = await dbContext.Orders.Include(x => x.SagaState).FirstOrDefaultAsync(x => x.Id == orderId, cancellationToken);
-        if (order != null && order.SagaState != null)
+        if (root.TryGetProperty("Reason", out _)) 
         {
-            // It's PaymentFailedEvent
-            if (root.TryGetProperty("Reason", out _)) 
+            var @event = JsonSerializer.Deserialize<PaymentFailedEvent>(messageJson);
+            if (@event != null)
             {
-                order.Status = OrderStatus.Cancelled;
+                await sagaHandler.HandleAsync(@event, cancellationToken);
             }
-            // // It's PaymentSucceededEvent
-            else 
+        }
+        else 
+        {
+            var @event = JsonSerializer.Deserialize<PaymentSucceededEvent>(messageJson);
+            if (@event != null)
             {
-                order.SagaState.PaymentCompleted = true;
-                if (order.SagaState.ReservationCompleted)
-                {
-                    order.Status = OrderStatus.Confirmed;
-                }
+                await sagaHandler.HandleAsync(@event, cancellationToken);
             }
-            await dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        Logger.LogInformation("Orders Saga processed payment event for OrderId: {OrderId}", orderId);
+        Logger.LogInformation("Orders Saga processed payment event EventId: {EventId}", eventId);
     }
 }

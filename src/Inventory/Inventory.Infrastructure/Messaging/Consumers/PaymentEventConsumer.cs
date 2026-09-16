@@ -1,10 +1,8 @@
 using System;
-using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Inventory.Domain.Entities;
-using Inventory.Domain.Enums;
+using Inventory.Application.Handlers;
 using Inventory.Infrastructure.Inbox;
 using Inventory.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -37,44 +35,36 @@ public class PaymentEventConsumerService : PulsarConsumerBase
     {
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
+        var handler = scope.ServiceProvider.GetRequiredService<IInventoryCommandHandler>();
 
-        var doc = JsonDocument.Parse(messageJson);
+        using var doc = JsonDocument.Parse(messageJson);
         var root = doc.RootElement;
         
         if (!root.TryGetProperty("EventId", out var eventIdProp) || !Guid.TryParse(eventIdProp.GetString(), out var eventId)) return;
-        if (!root.TryGetProperty("OrderId", out var orderIdProp) || !Guid.TryParse(orderIdProp.GetString(), out var orderId)) return;
 
         var exists = await dbContext.InboxMessages.AnyAsync(x => x.EventId == eventId, cancellationToken);
         if (exists) return;
 
-        dbContext.InboxMessages.Add(new InboxMessage { EventId = eventId });
+        dbContext.InboxMessages.Add(new InboxMessage { EventId = eventId, ProcessedAt = DateTime.UtcNow });
+        await dbContext.SaveChangesAsync(cancellationToken);
 
-        var isFailed = root.TryGetProperty("Reason", out _);
-        
-        var reservations = await dbContext.Reservations
-            .Where(x => x.OrderId == orderId && x.Status == ReservationStatus.Active)
-            .ToListAsync(cancellationToken);
-
-        foreach (var reservation in reservations)
+        if (root.TryGetProperty("Reason", out _))
         {
-            var item = await dbContext.StockItems.FirstOrDefaultAsync(x => x.Sku == reservation.Sku, cancellationToken);
-            if (item != null)
+            var @event = JsonSerializer.Deserialize<PaymentFailedEvent>(messageJson);
+            if (@event != null)
             {
-                if (isFailed) // Compensation
-                {
-                    reservation.Status = ReservationStatus.Released;
-                    item.QuantityReserved -= reservation.Quantity;
-                }
-                else // Succeeded
-                {
-                    reservation.Status = ReservationStatus.Consumed;
-                    item.QuantityReserved -= reservation.Quantity;
-                    item.QuantityOnHand -= reservation.Quantity; // Permanently consume stock
-                }
+                await handler.HandleAsync(@event, cancellationToken);
+            }
+        }
+        else
+        {
+            var @event = JsonSerializer.Deserialize<PaymentSucceededEvent>(messageJson);
+            if (@event != null)
+            {
+                await handler.HandleAsync(@event, cancellationToken);
             }
         }
 
-        await dbContext.SaveChangesAsync(cancellationToken);
-        Logger.LogInformation("Inventory processed payment event for OrderId: {OrderId}. Failed: {IsFailed}", orderId, isFailed);
+        Logger.LogInformation("Inventory consumer processed payment event EventId: {EventId}", eventId);
     }
 }

@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -8,10 +7,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OrderFlow.Contracts.Events;
+using Payments.Application.Handlers;
 using Payments.Infrastructure.Inbox;
 using Payments.Infrastructure.Persistence;
 using Shared.Infrastructure.Messaging;
-using LocalOutbox = Payments.Infrastructure.Outbox.OutboxMessage;
 
 namespace Payments.Infrastructure.BackgroundServices;
 
@@ -36,56 +35,28 @@ public class ReservationEventConsumerService : PulsarConsumerBase
     {
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<PaymentsDbContext>();
-
-        var reservationEvent = JsonSerializer.Deserialize<ReservationSucceededEvent>(messageJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        if (reservationEvent == null || reservationEvent.EventId == Guid.Empty) return;
-        
-        //  check if it has orderId
-        if (reservationEvent.OrderId == Guid.Empty) return;
+        var handler = scope.ServiceProvider.GetRequiredService<IPaymentCommandHandler>();
 
         using var doc = JsonDocument.Parse(messageJson);
-        if (doc.RootElement.TryGetProperty("Reason", out _)) 
-        {
-            //  ReservationFailedEven
-            return;
-        }
+        var root = doc.RootElement;
+        
+        // Ignore ReservationFailedEvent
+        if (root.TryGetProperty("Reason", out _)) return;
 
-        var exists = await dbContext.InboxMessages.AnyAsync(x => x.EventId == reservationEvent.EventId, cancellationToken);
+        if (!root.TryGetProperty("EventId", out var eventIdProp) || !Guid.TryParse(eventIdProp.GetString(), out var eventId)) return;
+
+        var exists = await dbContext.InboxMessages.AnyAsync(x => x.EventId == eventId, cancellationToken);
         if (exists) return;
 
-        dbContext.InboxMessages.Add(new InboxMessage { EventId = reservationEvent.EventId });
-
-        var totalAmount = reservationEvent.Lines.Sum(x => x.Quantity * x.UnitPrice);
-        IntegrationEvent outEvent;
-        
-        var payment = new Payments.Domain.Entities.Payment
-        {
-            OrderId = reservationEvent.OrderId,
-            Amount = totalAmount,
-            Status = Payments.Domain.Enums.PaymentStatus.Succeeded
-        };
-
-        if (totalAmount % 1 == 0.99m)
-        {
-            payment.Status = Payments.Domain.Enums.PaymentStatus.Failed;
-            outEvent = new PaymentFailedEvent(reservationEvent.OrderId, "Fake gateway rule: amount ends in .99");
-        }
-        else
-        {
-            outEvent = new PaymentSucceededEvent(reservationEvent.OrderId, payment.Id, totalAmount);
-        }
-
-        dbContext.Payments.Add(payment);
-
-        dbContext.OutboxMessages.Add(new LocalOutbox
-        {
-            EventId = outEvent.EventId,
-            Topic = "persistent://public/default/payment-events",
-            Payload = JsonSerializer.Serialize((object)outEvent),
-            CreatedAt = DateTime.UtcNow
-        });
-
+        dbContext.InboxMessages.Add(new InboxMessage { EventId = eventId, ProcessedAt = DateTime.UtcNow });
         await dbContext.SaveChangesAsync(cancellationToken);
-        Logger.LogInformation("Payments processed reservation event for OrderId: {OrderId}", reservationEvent.OrderId);
+
+        var reservationEvent = JsonSerializer.Deserialize<ReservationSucceededEvent>(messageJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        if (reservationEvent != null && reservationEvent.OrderId != Guid.Empty)
+        {
+            await handler.HandleAsync(reservationEvent, cancellationToken);
+        }
+
+        Logger.LogInformation("Payments consumer processed reservation event EventId: {EventId}", eventId);
     }
 }
