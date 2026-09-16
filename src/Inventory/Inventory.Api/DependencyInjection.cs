@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Payments.Api;
+namespace Inventory.Api;
 
 public static class DependencyInjection
 {

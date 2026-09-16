@@ -1,35 +1,23 @@
-using Inventory.Application.Abstractions;
+using System;
+using Inventory.Api;
+using Inventory.Infrastructure;
 using Inventory.Infrastructure.Persistence;
-using Inventory.Infrastructure.Services;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddApiServices();
+builder.Services.AddInfrastructureServices(builder.Configuration);
+
+var app = builder.Build();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? builder.Configuration["DB_CONNECTION_STRING"]
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-
-builder.Services.AddDbContext<InventoryDbContext>(options =>
-    options.UseNpgsql(connectionString));
-
-builder.Services.AddHostedService<Inventory.Infrastructure.BackgroundServices.OutboxProcessorService>();
-builder.Services.AddHostedService<Inventory.Infrastructure.BackgroundServices.OrderEventConsumerService>();
-builder.Services.AddHostedService<Inventory.Infrastructure.BackgroundServices.PaymentEventConsumerService>();
-
-builder.Services.AddScoped<IStockService, StockService>();
-
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
-    });
-});
-
-var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {

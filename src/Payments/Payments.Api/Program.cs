@@ -1,30 +1,23 @@
+using System;
+using Payments.Api;
+using Payments.Infrastructure;
 using Payments.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddApiServices();
+builder.Services.AddInfrastructureServices(builder.Configuration);
+
+var app = builder.Build();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? builder.Configuration["DB_CONNECTION_STRING"]
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-
-builder.Services.AddDbContext<PaymentsDbContext>(options =>
-    options.UseNpgsql(connectionString));
-
-builder.Services.AddHostedService<Payments.Infrastructure.BackgroundServices.OutboxProcessorService>();
-builder.Services.AddHostedService<Payments.Infrastructure.BackgroundServices.ReservationEventConsumerService>();
-
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-    {
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
-    });
-});
-
-var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
