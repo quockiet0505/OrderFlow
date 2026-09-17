@@ -1,4 +1,4 @@
-using Inventory.Infrastructure.Inbox;
+using Inventory.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

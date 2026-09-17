@@ -1,12 +1,11 @@
+using Inventory.Application.Abstractions;
 using Inventory.Domain.Entities;
 using Inventory.Domain.Enums;
-using Inventory.Infrastructure.Inbox;
-using Inventory.Infrastructure.Outbox;
 using Microsoft.EntityFrameworkCore;
 
 namespace Inventory.Infrastructure.Persistence;
 
-public class InventoryDbContext : DbContext
+public class InventoryDbContext : DbContext, IInventoryDbContext
 {
     public InventoryDbContext(DbContextOptions<InventoryDbContext> options) : base(options) { }
 

@@ -3,8 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Orders.Infrastructure.Persistence;
-using Shared.Infrastructure.Outbox;
-using LocalOutbox = Orders.Infrastructure.Outbox.OutboxMessage;
+using Shared.Infrastructure.Messaging;
+using LocalOutbox = Orders.Domain.Entities.OutboxMessage;
 
 namespace Orders.Infrastructure.Messaging.Publishers;
 
@@ -17,7 +17,7 @@ public class OutboxProcessorService : OutboxProcessorBase<OrdersDbContext, Local
         : base(
             serviceProvider,
             configuration["Pulsar:ServiceUrl"] ?? "pulsar://localhost:6650",
-            "persistent://public/default/order-events",
+            "persistent://public/default/orders.order-placed",
             logger)
     {
     }

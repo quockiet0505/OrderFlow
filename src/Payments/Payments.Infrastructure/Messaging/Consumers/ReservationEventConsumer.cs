@@ -7,8 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OrderFlow.Contracts.Events;
-using Payments.Application.Handlers;
-using Payments.Infrastructure.Inbox;
+using Payments.Domain.Entities;
 using Payments.Infrastructure.Persistence;
 using Shared.Infrastructure.Messaging;
 
@@ -35,9 +34,8 @@ public class ReservationEventConsumerService : PulsarConsumerBase
         PaymentsDbContext dbContext,
         Guid eventId,
         Func<Task> handleEvent,
-        CancellationToken cancellationToken
-    ){
-        // create a transaction to ensure that the inbox message and the event
+        CancellationToken cancellationToken)
+    {
         await using var transaction =
             await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
@@ -61,7 +59,7 @@ public class ReservationEventConsumerService : PulsarConsumerBase
     {
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<PaymentsDbContext>();
-        var handler = scope.ServiceProvider.GetRequiredService<IPaymentCommandHandler>();
+        var handler = scope.ServiceProvider.GetRequiredService<IIntegrationEventHandler<ReservationSucceededEvent>>();
 
         using var doc = JsonDocument.Parse(messageJson);
         var root = doc.RootElement;
@@ -71,15 +69,14 @@ public class ReservationEventConsumerService : PulsarConsumerBase
 
         if (!root.TryGetProperty("EventId", out var eventIdProp) || !Guid.TryParse(eventIdProp.GetString(), out var eventId)) return;
 
-        // json -> ob
         var reservationEvent = JsonSerializer.Deserialize<ReservationSucceededEvent>(
             messageJson,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
         );
 
-        if(reservationEvent is null)
+        if (reservationEvent is null)
         {
-            Logger.LogWarming("Failed to deserialize ReservationSucceededEvent from message: {MessageJson}", messageJson);
+            Logger.LogWarning("Failed to deserialize ReservationSucceededEvent from message: {MessageJson}", messageJson);
             return;
         }
         

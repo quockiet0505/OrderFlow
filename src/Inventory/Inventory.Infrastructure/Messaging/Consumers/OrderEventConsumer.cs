@@ -2,8 +2,7 @@ using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Inventory.Application.Handlers;
-using Inventory.Infrastructure.Inbox;
+using Inventory.Domain.Entities;
 using Inventory.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -24,7 +23,7 @@ public class OrderEventConsumerService : PulsarConsumerBase
         ILogger<OrderEventConsumerService> logger)
         : base(
             configuration["Pulsar:ServiceUrl"] ?? "pulsar://localhost:6650",
-            "persistent://public/default/order-events",
+            "persistent://public/default/orders.order-placed",
             "inventory-order-sub",
             logger)
     {
@@ -35,9 +34,8 @@ public class OrderEventConsumerService : PulsarConsumerBase
         InventoryDbContext dbContext,
         Guid eventId,
         Func<Task> handleEvent,
-        CancellationToken cancellationToken
-    ){
-        // create a transaction to ensure that the inbox message and the event
+        CancellationToken cancellationToken)
+    {
         await using var transaction =
             await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
@@ -56,13 +54,12 @@ public class OrderEventConsumerService : PulsarConsumerBase
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }
-    
 
     protected override async Task ConsumeMessageAsync(string topic, string messageJson, CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
-        var handler = scope.ServiceProvider.GetRequiredService<IInventoryCommandHandler>();
+        var handler = scope.ServiceProvider.GetRequiredService<IIntegrationEventHandler<OrderPlacedEvent>>();
 
         var orderEvent = JsonSerializer.Deserialize<OrderPlacedEvent>(
             messageJson, 
@@ -70,14 +67,13 @@ public class OrderEventConsumerService : PulsarConsumerBase
         );
         if (orderEvent == null || orderEvent.EventId == Guid.Empty) return;
 
-        var exists = await dbContext.InboxMessages.AnyAsync(x => x.EventId == orderEvent.EventId, cancellationToken);
-        if (exists) return;
+        await ProcessEventAsync(
+            dbContext,
+            orderEvent.EventId,
+            () => handler.HandleAsync(orderEvent, cancellationToken),
+            cancellationToken
+        );
 
-        dbContext.InboxMessages.Add(new InboxMessage { EventId = orderEvent.EventId, ProcessedAt = DateTime.UtcNow });
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        await handler.HandleAsync(orderEvent, cancellationToken);
-
-        Logger.LogInformation("Inventory consumer processed order event: {OrderId}", orderEvent.OrderId);
+        Logger.LogInformation("Inventory consumer processed order event for OrderId: {OrderId}", orderEvent.OrderId);
     }
 }

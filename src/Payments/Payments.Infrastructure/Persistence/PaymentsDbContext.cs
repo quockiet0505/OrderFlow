@@ -1,12 +1,11 @@
 using Microsoft.EntityFrameworkCore;
+using Payments.Application.Abstractions;
 using Payments.Domain.Entities;
 using Payments.Domain.Enums;
-using Payments.Infrastructure.Inbox;
-using Payments.Infrastructure.Outbox;
 
 namespace Payments.Infrastructure.Persistence;
 
-public class PaymentsDbContext : DbContext
+public class PaymentsDbContext : DbContext, IPaymentsDbContext
 {
     public PaymentsDbContext(DbContextOptions<PaymentsDbContext> options) : base(options) { }
 

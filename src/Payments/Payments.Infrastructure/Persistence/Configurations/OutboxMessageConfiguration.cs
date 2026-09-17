@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Payments.Infrastructure.Outbox;
+using Payments.Domain.Entities;
 
 namespace Payments.Infrastructure.Persistence.Configurations;
 

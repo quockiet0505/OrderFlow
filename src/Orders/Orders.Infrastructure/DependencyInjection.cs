@@ -2,9 +2,11 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OrderFlow.Contracts.Events;
+using Orders.Application.Abstractions;
 using Orders.Application.Handlers;
-using Orders.Infrastructure.BackgroundServices;
-using Orders.Infrastructure.Handlers;
+using Orders.Infrastructure.Messaging.Publishers;
+using Orders.Infrastructure.Messaging.Consumers;
 using Orders.Infrastructure.Persistence;
 
 namespace Orders.Infrastructure;
@@ -20,7 +22,13 @@ public static class DependencyInjection
         services.AddDbContext<OrdersDbContext>(options =>
             options.UseNpgsql(connectionString));
 
-        services.AddScoped<IOrderSagaHandler, OrderSagaHandler>();
+        services.AddScoped<IOrdersDbContext>(sp => sp.GetRequiredService<OrdersDbContext>());
+
+        // Register individual Application handlers
+        services.AddScoped<IIntegrationEventHandler<ReservationSucceededEvent>, ReservationSucceededHandler>();
+        services.AddScoped<IIntegrationEventHandler<ReservationFailedEvent>, ReservationFailedHandler>();
+        services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, PaymentSucceededHandler>();
+        services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, PaymentFailedHandler>();
 
         services.AddHostedService<OutboxProcessorService>();
         services.AddHostedService<ReservationEventConsumerService>();

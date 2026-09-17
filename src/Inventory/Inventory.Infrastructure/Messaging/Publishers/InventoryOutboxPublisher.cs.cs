@@ -3,8 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Inventory.Infrastructure.Persistence;
-using Shared.Infrastructure.Outbox;
-using LocalOutbox = Inventory.Infrastructure.Outbox.OutboxMessage;
+using Shared.Infrastructure.Messaging;
+using LocalOutbox = Inventory.Domain.Entities.OutboxMessage;
 
 namespace Inventory.Infrastructure.Messaging.Publishers;
 

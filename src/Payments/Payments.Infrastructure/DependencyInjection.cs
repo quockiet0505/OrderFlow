@@ -2,9 +2,11 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OrderFlow.Contracts.Events;
+using Payments.Application.Abstractions;
 using Payments.Application.Handlers;
-using Payments.Infrastructure.BackgroundServices;
-using Payments.Infrastructure.Handlers;
+using Payments.Infrastructure.Messaging.Consumers;
+using Payments.Infrastructure.Messaging.Publishers;
 using Payments.Infrastructure.Persistence;
 
 namespace Payments.Infrastructure;
@@ -20,7 +22,10 @@ public static class DependencyInjection
         services.AddDbContext<PaymentsDbContext>(options =>
             options.UseNpgsql(connectionString));
 
-        services.AddScoped<IPaymentCommandHandler, PaymentCommandHandler>();
+        services.AddScoped<IPaymentsDbContext>(sp => sp.GetRequiredService<PaymentsDbContext>());
+
+        // Register individual Application handler
+        services.AddScoped<IIntegrationEventHandler<ReservationSucceededEvent>, ReservationSucceededHandler>();
 
         services.AddHostedService<OutboxProcessorService>();
         services.AddHostedService<ReservationEventConsumerService>();

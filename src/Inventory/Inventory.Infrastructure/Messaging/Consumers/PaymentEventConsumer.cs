@@ -2,8 +2,7 @@ using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Inventory.Application.Handlers;
-using Inventory.Infrastructure.Inbox;
+using Inventory.Domain.Entities;
 using Inventory.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -35,9 +34,8 @@ public class PaymentEventConsumerService : PulsarConsumerBase
         InventoryDbContext dbContext,
         Guid eventId,
         Func<Task> handleEvent,
-        CancellationToken cancellationToken
-    ){
-        // create a transaction to ensure that the inbox message and the event
+        CancellationToken cancellationToken)
+    {
         await using var transaction =
             await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
@@ -61,21 +59,21 @@ public class PaymentEventConsumerService : PulsarConsumerBase
     {
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
-        var handler = scope.ServiceProvider.GetRequiredService<IInventoryCommandHandler>();
 
         using var doc = JsonDocument.Parse(messageJson);
         var root = doc.RootElement;
         
         if (!root.TryGetProperty("EventId", out var eventIdProp) || !Guid.TryParse(eventIdProp.GetString(), out var eventId)) return;
 
-
         if (root.TryGetProperty("Reason", out _))
         {
             var @event = JsonSerializer.Deserialize<PaymentFailedEvent>(
                 messageJson,
-                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
             )
                 ?? throw new InvalidOperationException("Failed to deserialize PaymentFailedEvent");
+
+            var handler = scope.ServiceProvider.GetRequiredService<IIntegrationEventHandler<PaymentFailedEvent>>();
             
             await ProcessEventAsync(
                 dbContext, 
@@ -86,8 +84,13 @@ public class PaymentEventConsumerService : PulsarConsumerBase
         }
         else
         {
-            var @event = JsonSerializer.Deserialize<PaymentSucceededEvent>(messageJson)
+            var @event = JsonSerializer.Deserialize<PaymentSucceededEvent>(
+                messageJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            )
                 ?? throw new InvalidOperationException("Failed to deserialize PaymentSucceededEvent");
+
+            var handler = scope.ServiceProvider.GetRequiredService<IIntegrationEventHandler<PaymentSucceededEvent>>();
             
             await ProcessEventAsync(
                 dbContext,

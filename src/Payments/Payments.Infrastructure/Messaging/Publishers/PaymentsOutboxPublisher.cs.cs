@@ -3,8 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Payments.Infrastructure.Persistence;
-using Shared.Infrastructure.Outbox;
-using LocalOutbox = Payments.Infrastructure.Outbox.OutboxMessage;
+using Shared.Infrastructure.Messaging;
+using LocalOutbox = Payments.Domain.Entities.OutboxMessage;
 
 namespace Payments.Infrastructure.Messaging.Publishers;
 

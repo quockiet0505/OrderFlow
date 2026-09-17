@@ -7,8 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OrderFlow.Contracts.Events;
-using Orders.Application.Handlers;
-using Orders.Infrastructure.Inbox;
+using Orders.Domain.Entities;
 using Orders.Infrastructure.Persistence;
 using Shared.Infrastructure.Messaging;
 
@@ -35,9 +34,8 @@ public class ReservationEventConsumerService : PulsarConsumerBase
         OrdersDbContext dbContext,
         Guid eventId,
         Func<Task> handleEvent,
-        CancellationToken cancellationToken
-    ){
-        // create a transaction to ensure that the inbox message and the event
+        CancellationToken cancellationToken)
+    {
         await using var transaction =
             await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
@@ -61,11 +59,10 @@ public class ReservationEventConsumerService : PulsarConsumerBase
     {
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<OrdersDbContext>();
-        var sagaHandler = scope.ServiceProvider.GetRequiredService<IOrderSagaHandler>();
 
         using var doc = JsonDocument.Parse(messageJson);
         var root = doc.RootElement;
-        
+
         if (!root.TryGetProperty("EventId", out var eventIdProp) || !Guid.TryParse(eventIdProp.GetString(), out var eventId)) return;
 
         if (root.TryGetProperty("Reason", out _)) 
@@ -76,21 +73,28 @@ public class ReservationEventConsumerService : PulsarConsumerBase
             )
                 ?? throw new InvalidOperationException("Failed to deserialize ReservationFailedEvent");
 
+            var handler = scope.ServiceProvider.GetRequiredService<IIntegrationEventHandler<ReservationFailedEvent>>();
+
             await ProcessEventAsync(
                 dbContext, 
                 eventId, 
-                () => sagaHandler.HandleAsync(@event, cancellationToken),
+                () => handler.HandleAsync(@event, cancellationToken),
                 cancellationToken);
         }
         else 
         {
-            var @event = JsonSerializer.Deserialize<ReservationSucceededEvent>(messageJson)
+            var @event = JsonSerializer.Deserialize<ReservationSucceededEvent>(
+                messageJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            )
                 ?? throw new InvalidOperationException("Failed to deserialize ReservationSucceededEvent");
+
+            var handler = scope.ServiceProvider.GetRequiredService<IIntegrationEventHandler<ReservationSucceededEvent>>();
 
             await ProcessEventAsync(
                 dbContext,
                 eventId,
-                () => sagaHandler.HandleAsync(@event, cancellationToken),
+                () => handler.HandleAsync(@event, cancellationToken),
                 cancellationToken
             );
         }

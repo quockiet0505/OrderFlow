@@ -7,8 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OrderFlow.Contracts.Events;
-using Orders.Application.Handlers;
-using Orders.Infrastructure.Inbox;
+using Orders.Domain.Entities;
 using Orders.Infrastructure.Persistence;
 using Shared.Infrastructure.Messaging;
 
@@ -37,11 +36,10 @@ public class PaymentEventConsumerService : PulsarConsumerBase
         Func<Task> handleEvent,
         CancellationToken cancellationToken
     ){
-        // create a transaction to ensure that the inbox message and the event
         await using var transaction =
-            awaitdbContext.Database.BeginTransactionAsync(cancellationToken);
+            await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
-        var exists = awaitdbContext.InboxMessages
+        var exists = await dbContext.InboxMessages
             .AnyAsync(x => x.EventId == eventId, cancellationToken);
 
         if (exists)
@@ -53,7 +51,7 @@ public class PaymentEventConsumerService : PulsarConsumerBase
         await handleEvent();
 
         dbContext.InboxMessages.Add(new InboxMessage { EventId = eventId, ProcessedAt = DateTime.UtcNow });
-        awaitdbContext.SaveChangesAsync(cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }
 
@@ -61,7 +59,6 @@ public class PaymentEventConsumerService : PulsarConsumerBase
     {
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<OrdersDbContext>();
-        var sagaHandler = scope.ServiceProvider.GetRequiredService<IOrderSagaHandler>();
 
         using var doc = JsonDocument.Parse(messageJson);
         var root = doc.RootElement;
@@ -75,22 +72,29 @@ public class PaymentEventConsumerService : PulsarConsumerBase
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
             )
                 ?? throw new InvalidOperationException("Failed to deserialize PaymentFailedEvent");
+
+            var handler = scope.ServiceProvider.GetRequiredService<IIntegrationEventHandler<PaymentFailedEvent>>();
             
             await ProcessEventAsync(
                 dbContext, 
                 eventId, 
-                () => sagaHandler.HandleAsync(@event, cancellationToken), 
+                () => handler.HandleAsync(@event, cancellationToken), 
                 cancellationToken);
         }
         else 
         {
-            var @event = JsonSerializer.Deserialize<PaymentSucceededEvent>(messageJson)
+            var @event = JsonSerializer.Deserialize<PaymentSucceededEvent>(
+                messageJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            )
                 ?? throw new InvalidOperationException("Failed to deserialize PaymentSucceededEvent");
+
+            var handler = scope.ServiceProvider.GetRequiredService<IIntegrationEventHandler<PaymentSucceededEvent>>();
 
             await ProcessEventAsync(
                 dbContext,
                 eventId,
-                () => sagaHandler.HandleAsync(@event, cancellationToken),
+                () => handler.HandleAsync(@event, cancellationToken),
                 cancellationToken
             );
         }

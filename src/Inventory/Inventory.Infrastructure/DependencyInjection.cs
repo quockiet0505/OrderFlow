@@ -1,13 +1,14 @@
 using System;
 using Inventory.Application.Abstractions;
 using Inventory.Application.Handlers;
-using Inventory.Infrastructure.BackgroundServices;
-using Inventory.Infrastructure.Handlers;
+using Inventory.Infrastructure.Messaging.Consumers;
+using Inventory.Infrastructure.Messaging.Publishers;
 using Inventory.Infrastructure.Persistence;
 using Inventory.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using OrderFlow.Contracts.Events;
 
 namespace Inventory.Infrastructure;
 
@@ -22,8 +23,13 @@ public static class DependencyInjection
         services.AddDbContext<InventoryDbContext>(options =>
             options.UseNpgsql(connectionString));
 
+        services.AddScoped<IInventoryDbContext>(sp => sp.GetRequiredService<InventoryDbContext>());
         services.AddScoped<IStockService, StockService>();
-        services.AddScoped<IInventoryCommandHandler, InventoryCommandHandler>();
+
+        // Register individual Application handlers
+        services.AddScoped<IIntegrationEventHandler<OrderPlacedEvent>, OrderPlacedHandler>();
+        services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, PaymentSucceededHandler>();
+        services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, PaymentFailedHandler>();
 
         services.AddHostedService<OutboxProcessorService>();
         services.AddHostedService<OrderEventConsumerService>();
