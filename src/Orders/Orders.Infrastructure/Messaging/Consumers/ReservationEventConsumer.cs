@@ -12,7 +12,7 @@ using Orders.Infrastructure.Inbox;
 using Orders.Infrastructure.Persistence;
 using Shared.Infrastructure.Messaging;
 
-namespace Orders.Infrastructure.BackgroundServices;
+namespace Orders.Infrastructure.Messaging.Consumers;
 
 public class ReservationEventConsumerService : PulsarConsumerBase
 {
@@ -31,6 +31,32 @@ public class ReservationEventConsumerService : PulsarConsumerBase
         _serviceProvider = serviceProvider;
     }
 
+    private static async Task ProcessEventAsync(
+        OrdersDbContext dbContext,
+        Guid eventId,
+        Func<Task> handleEvent,
+        CancellationToken cancellationToken
+    ){
+        // create a transaction to ensure that the inbox message and the event
+        await using var transaction =
+            await dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+        var exists = await dbContext.InboxMessages
+            .AnyAsync(x => x.EventId == eventId, cancellationToken);
+
+        if (exists)
+        {
+            await transaction.CommitAsync(cancellationToken);
+            return;
+        }
+
+        await handleEvent();
+
+        dbContext.InboxMessages.Add(new InboxMessage { EventId = eventId, ProcessedAt = DateTime.UtcNow });
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
     protected override async Task ConsumeMessageAsync(string topic, string messageJson, CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
@@ -42,27 +68,28 @@ public class ReservationEventConsumerService : PulsarConsumerBase
         
         if (!root.TryGetProperty("EventId", out var eventIdProp) || !Guid.TryParse(eventIdProp.GetString(), out var eventId)) return;
 
-        var exists = await dbContext.InboxMessages.AnyAsync(x => x.EventId == eventId, cancellationToken);
-        if (exists) return;
-
-        dbContext.InboxMessages.Add(new InboxMessage { EventId = eventId, ProcessedAt = DateTime.UtcNow });
-        await dbContext.SaveChangesAsync(cancellationToken);
-
         if (root.TryGetProperty("Reason", out _)) 
         {
-            var @event = JsonSerializer.Deserialize<ReservationFailedEvent>(messageJson);
-            if (@event != null)
-            {
-                await sagaHandler.HandleAsync(@event, cancellationToken);
-            }
+            var @event = JsonSerializer.Deserialize<ReservationFailedEvent>(messageJson)
+                ?? throw new InvalidOperationException("Failed to deserialize ReservationFailedEvent");
+
+            await ProcessEventAsync(
+                dbContext, 
+                eventId, 
+                () => sagaHandler.HandleAsync(@event, cancellationToken),
+                cancellationToken);
         }
         else 
         {
-            var @event = JsonSerializer.Deserialize<ReservationSucceededEvent>(messageJson);
-            if (@event != null)
-            {
-                await sagaHandler.HandleAsync(@event, cancellationToken);
-            }
+            var @event = JsonSerializer.Deserialize<ReservationSucceededEvent>(messageJson)
+                ?? throw new InvalidOperationException("Failed to deserialize ReservationSucceededEvent");
+
+            await ProcessEventAsync(
+                dbContext,
+                eventId,
+                () => sagaHandler.HandleAsync(@event, cancellationToken),
+                cancellationToken
+            );
         }
 
         Logger.LogInformation("Orders Saga processed reservation event EventId: {EventId}", eventId);

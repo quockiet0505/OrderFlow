@@ -9,7 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Shared.Infrastructure.Outbox;
+namespace Shared.Infrastructure.Messaging;
 
 public abstract class OutboxProcessorBase<TDbContext, TOutboxMessage> : BackgroundService 
     where TDbContext : DbContext 

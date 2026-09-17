@@ -6,7 +6,7 @@ using Inventory.Infrastructure.Persistence;
 using Shared.Infrastructure.Outbox;
 using LocalOutbox = Inventory.Infrastructure.Outbox.OutboxMessage;
 
-namespace Inventory.Infrastructure.BackgroundServices;
+namespace Inventory.Infrastructure.Messaging.Publishers;
 
 public class OutboxProcessorService : OutboxProcessorBase<InventoryDbContext, LocalOutbox>
 {

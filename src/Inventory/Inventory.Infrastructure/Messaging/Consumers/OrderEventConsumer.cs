@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 using OrderFlow.Contracts.Events;
 using Shared.Infrastructure.Messaging;
 
-namespace Inventory.Infrastructure.BackgroundServices;
+namespace Inventory.Infrastructure.Messaging.Consumers;
 
 public class OrderEventConsumerService : PulsarConsumerBase
 {
@@ -30,6 +30,33 @@ public class OrderEventConsumerService : PulsarConsumerBase
     {
         _serviceProvider = serviceProvider;
     }
+
+    private static async Task ProcessEventAsync(
+        InventoryDbContext dbContext,
+        Guid eventId,
+        Func<Task> handleEvent,
+        CancellationToken cancellationToken
+    ){
+        // create a transaction to ensure that the inbox message and the event
+        await using var transaction =
+            await dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+        var exists = await dbContext.InboxMessages
+            .AnyAsync(x => x.EventId == eventId, cancellationToken);
+
+        if (exists)
+        {
+            await transaction.CommitAsync(cancellationToken);
+            return;
+        }
+
+        await handleEvent();
+
+        dbContext.InboxMessages.Add(new InboxMessage { EventId = eventId, ProcessedAt = DateTime.UtcNow });
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+    
 
     protected override async Task ConsumeMessageAsync(string topic, string messageJson, CancellationToken cancellationToken)
     {

@@ -12,7 +12,7 @@ using Payments.Infrastructure.Inbox;
 using Payments.Infrastructure.Persistence;
 using Shared.Infrastructure.Messaging;
 
-namespace Payments.Infrastructure.BackgroundServices;
+namespace Payments.Infrastructure.Messaging.Consumers;
 
 public class ReservationEventConsumerService : PulsarConsumerBase
 {
@@ -31,6 +31,32 @@ public class ReservationEventConsumerService : PulsarConsumerBase
         _serviceProvider = serviceProvider;
     }
 
+    private static async Task ProcessEventAsync(
+        PaymentsDbContext dbContext,
+        Guid eventId,
+        Func<Task> handleEvent,
+        CancellationToken cancellationToken
+    ){
+        // create a transaction to ensure that the inbox message and the event
+        await using var transaction =
+            await dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+        var exists = await dbContext.InboxMessages
+            .AnyAsync(x => x.EventId == eventId, cancellationToken);
+
+        if (exists)
+        {
+            await transaction.CommitAsync(cancellationToken);
+            return;
+        }
+
+        await handleEvent();
+
+        dbContext.InboxMessages.Add(new InboxMessage { EventId = eventId, ProcessedAt = DateTime.UtcNow });
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
     protected override async Task ConsumeMessageAsync(string topic, string messageJson, CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
@@ -45,17 +71,15 @@ public class ReservationEventConsumerService : PulsarConsumerBase
 
         if (!root.TryGetProperty("EventId", out var eventIdProp) || !Guid.TryParse(eventIdProp.GetString(), out var eventId)) return;
 
-        var exists = await dbContext.InboxMessages.AnyAsync(x => x.EventId == eventId, cancellationToken);
-        if (exists) return;
-
-        dbContext.InboxMessages.Add(new InboxMessage { EventId = eventId, ProcessedAt = DateTime.UtcNow });
-        await dbContext.SaveChangesAsync(cancellationToken);
-
-        var reservationEvent = JsonSerializer.Deserialize<ReservationSucceededEvent>(messageJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        if (reservationEvent != null && reservationEvent.OrderId != Guid.Empty)
-        {
-            await handler.HandleAsync(reservationEvent, cancellationToken);
-        }
+        // json -> ob
+        var reservationEvent = JsonSerializer.Deserialize<ReservationSucceededEvent>(messageJson);
+        
+        await ProcessEventAsync(
+            dbContext,
+            eventId,
+            () => handler.HandleAsync(reservationEvent, cancellationToken),
+            cancellationToken
+        );
 
         Logger.LogInformation("Payments consumer processed reservation event EventId: {EventId}", eventId);
     }

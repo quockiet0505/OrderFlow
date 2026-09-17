@@ -6,7 +6,7 @@ using Orders.Infrastructure.Persistence;
 using Shared.Infrastructure.Outbox;
 using LocalOutbox = Orders.Infrastructure.Outbox.OutboxMessage;
 
-namespace Orders.Infrastructure.BackgroundServices;
+namespace Orders.Infrastructure.Messaging.Publishers;
 
 public class OutboxProcessorService : OutboxProcessorBase<OrdersDbContext, LocalOutbox>
 {

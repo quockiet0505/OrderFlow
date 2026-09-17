@@ -6,7 +6,7 @@ using Payments.Infrastructure.Persistence;
 using Shared.Infrastructure.Outbox;
 using LocalOutbox = Payments.Infrastructure.Outbox.OutboxMessage;
 
-namespace Payments.Infrastructure.BackgroundServices;
+namespace Payments.Infrastructure.Messaging.Publishers;
 
 public class OutboxProcessorService : OutboxProcessorBase<PaymentsDbContext, LocalOutbox>
 {
