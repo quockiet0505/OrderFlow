@@ -64,7 +64,10 @@ public class OrderEventConsumerService : PulsarConsumerBase
         var dbContext = scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
         var handler = scope.ServiceProvider.GetRequiredService<IInventoryCommandHandler>();
 
-        var orderEvent = JsonSerializer.Deserialize<OrderPlacedEvent>(messageJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+        var orderEvent = JsonSerializer.Deserialize<OrderPlacedEvent>(
+            messageJson, 
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+        );
         if (orderEvent == null || orderEvent.EventId == Guid.Empty) return;
 
         var exists = await dbContext.InboxMessages.AnyAsync(x => x.EventId == orderEvent.EventId, cancellationToken);

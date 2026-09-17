@@ -72,7 +72,16 @@ public class ReservationEventConsumerService : PulsarConsumerBase
         if (!root.TryGetProperty("EventId", out var eventIdProp) || !Guid.TryParse(eventIdProp.GetString(), out var eventId)) return;
 
         // json -> ob
-        var reservationEvent = JsonSerializer.Deserialize<ReservationSucceededEvent>(messageJson);
+        var reservationEvent = JsonSerializer.Deserialize<ReservationSucceededEvent>(
+            messageJson,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+        );
+
+        if(reservationEvent is null)
+        {
+            Logger.LogWarming("Failed to deserialize ReservationSucceededEvent from message: {MessageJson}", messageJson);
+            return;
+        }
         
         await ProcessEventAsync(
             dbContext,

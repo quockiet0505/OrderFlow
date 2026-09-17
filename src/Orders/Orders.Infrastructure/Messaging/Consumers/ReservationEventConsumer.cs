@@ -70,7 +70,10 @@ public class ReservationEventConsumerService : PulsarConsumerBase
 
         if (root.TryGetProperty("Reason", out _)) 
         {
-            var @event = JsonSerializer.Deserialize<ReservationFailedEvent>(messageJson)
+            var @event = JsonSerializer.Deserialize<ReservationFailedEvent>(
+                messageJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            )
                 ?? throw new InvalidOperationException("Failed to deserialize ReservationFailedEvent");
 
             await ProcessEventAsync(

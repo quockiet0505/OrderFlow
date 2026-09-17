@@ -71,7 +71,10 @@ public class PaymentEventConsumerService : PulsarConsumerBase
 
         if (root.TryGetProperty("Reason", out _))
         {
-            var @event = JsonSerializer.Deserialize<PaymentFailedEvent>(messageJson)
+            var @event = JsonSerializer.Deserialize<PaymentFailedEvent>(
+                messageJson,
+                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+            )
                 ?? throw new InvalidOperationException("Failed to deserialize PaymentFailedEvent");
             
             await ProcessEventAsync(
