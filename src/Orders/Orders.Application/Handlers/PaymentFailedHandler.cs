@@ -1,0 +1,54 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using OrderFlow.Contracts.Events;
+using Orders.Application.Abstractions;
+using Orders.Domain.Entities;
+using Orders.Domain.Enums;
+
+namespace Orders.Application.Handlers;
+
+public class PaymentFailedHandler : IIntegrationEventHandler<PaymentFailedEvent>
+{
+    private readonly IOrdersDbContext _dbContext;
+    private readonly ILogger<PaymentFailedHandler> _logger;
+
+    public PaymentFailedHandler(IOrdersDbContext dbContext, ILogger<PaymentFailedHandler> logger)
+    {
+        _dbContext = dbContext;
+        _logger = logger;
+    }
+
+    public async Task HandleAsync(PaymentFailedEvent @event, CancellationToken cancellationToken = default)
+    {
+        if (@event == null || @event.OrderId == Guid.Empty)
+        {
+            _logger.LogWarning("Received invalid PaymentFailedEvent payload.");
+            return;
+        }
+
+        var order = await _dbContext.Orders
+            .Include(o => o.SagaState)
+            .FirstOrDefaultAsync(o => o.Id == @event.OrderId, cancellationToken);
+
+        if (order == null)
+        {
+            _logger.LogWarning("Order {OrderId} not found for PaymentFailedEvent", @event.OrderId);
+            return;
+        }
+
+        if (order.Status != OrderStatus.Confirmed && order.Status != OrderStatus.Cancelled)
+        {
+            order.Status = OrderStatus.Cancelled;
+            order.UpdatedAt = DateTime.UtcNow;
+
+            order.SagaState ??= new OrderSagaState { OrderId = order.Id };
+            order.SagaState.LastProcessedEventId = @event.EventId;
+
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            _logger.LogInformation("Order {OrderId} status updated to Cancelled due to payment failure. Reason: {Reason}", order.Id, @event.Reason);
+        }
+    }
+}
