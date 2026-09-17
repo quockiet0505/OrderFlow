@@ -3,15 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OrderFlow.Contracts.DTOs;
 using OrderFlow.Contracts.Events;
+using Orders.Application.Abstractions;
 using Orders.Application.DTOs;
 using Orders.Domain.Entities;
 using Orders.Domain.Enums;
-using Orders.Infrastructure.Outbox;
-using Orders.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Orders.Api.Controllers;
 
@@ -19,9 +18,9 @@ namespace Orders.Api.Controllers;
 [Route("[controller]")]
 public class OrdersController : ControllerBase
 {
-    private readonly OrdersDbContext _dbContext;
+    private readonly IOrdersDbContext _dbContext;
 
-    public OrdersController(OrdersDbContext dbContext)
+    public OrdersController(IOrdersDbContext dbContext)
     {
         _dbContext = dbContext;
     }
@@ -30,9 +29,37 @@ public class OrdersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateOrder([FromBody] CreateOrderApiRequest request)
     {
-        if (request == null || request.Lines == null || !request.Lines.Any())
+        if (request == null)
+        {
+            return BadRequest(new { message = "Request body cannot be null." });
+        }
+
+        if (string.IsNullOrWhiteSpace(request.CustomerId))
+        {
+            return BadRequest(new { message = "CustomerId is required and cannot be empty." });
+        }
+
+        if (request.Lines == null || !request.Lines.Any())
         {
             return BadRequest(new { message = "Order must contain at least one line item." });
+        }
+
+        foreach (var line in request.Lines)
+        {
+            if (string.IsNullOrWhiteSpace(line.Sku))
+            {
+                return BadRequest(new { message = "SKU is required for all order lines." });
+            }
+
+            if (line.Quantity <= 0)
+            {
+                return BadRequest(new { message = $"Quantity for SKU '{line.Sku}' must be greater than zero." });
+            }
+
+            if (line.UnitPrice < 0)
+            {
+                return BadRequest(new { message = $"UnitPrice for SKU '{line.Sku}' cannot be negative." });
+            }
         }
 
         var orderId = Guid.NewGuid();
@@ -41,7 +68,7 @@ public class OrdersController : ControllerBase
         var order = new Order
         {
             Id = orderId,
-            CustomerId = request.CustomerId,
+            CustomerId = request.CustomerId.Trim(),
             TotalAmount = totalAmount,
             Status = OrderStatus.Pending,
             CreatedAt = DateTime.UtcNow,
@@ -49,7 +76,7 @@ public class OrdersController : ControllerBase
             Lines = request.Lines.Select(l => new OrderLine
             {
                 OrderId = orderId,
-                Sku = l.Sku,
+                Sku = l.Sku.Trim(),
                 Quantity = l.Quantity,
                 UnitPrice = l.UnitPrice
             }).ToList(),
@@ -64,8 +91,8 @@ public class OrdersController : ControllerBase
         // Transactional Outbox Event: OrderPlaced
         var orderPlacedEvent = new OrderPlacedEvent(
             orderId,
-            request.CustomerId,
-            request.Lines.Select(x => new OrderLineItemDto(x.Sku, x.Quantity, x.UnitPrice)).ToList(),
+            request.CustomerId.Trim(),
+            request.Lines.Select(x => new OrderLineItemDto(x.Sku.Trim(), x.Quantity, x.UnitPrice)).ToList(),
             totalAmount
         );
 
@@ -77,20 +104,10 @@ public class OrdersController : ControllerBase
             CreatedAt = DateTime.UtcNow
         };
 
-        using var transaction = await _dbContext.Database.BeginTransactionAsync();
-        try
-        {
-            _dbContext.Orders.Add(order);
-            _dbContext.OutboxMessages.Add(outboxMessage);
+        _dbContext.Orders.Add(order);
+        _dbContext.OutboxMessages.Add(outboxMessage);
 
-            await _dbContext.SaveChangesAsync();
-            await transaction.CommitAsync();
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+        await _dbContext.SaveChangesAsync();
 
         return Accepted(new
         {
@@ -104,13 +121,18 @@ public class OrdersController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetOrderById(Guid id)
     {
+        if (id == Guid.Empty)
+        {
+            return BadRequest(new { message = "Invalid Order ID." });
+        }
+
         var order = await _dbContext.Orders
             .Include(x => x.Lines)
             .Include(x => x.SagaState)
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.Id == id);
 
-        if (order == null) return NotFound();
+        if (order == null) return NotFound(new { message = $"Order {id} not found." });
 
         return Ok(new
         {
@@ -144,7 +166,7 @@ public class OrdersController : ControllerBase
             .Include(x => x.Lines)
             .Include(x => x.SagaState)
             .AsNoTracking()
-            .Where(x => x.CustomerId == customerId)
+            .Where(x => x.CustomerId == customerId.Trim())
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync();
 
@@ -159,4 +181,3 @@ public class OrdersController : ControllerBase
         return Ok(response);
     }
 }
-

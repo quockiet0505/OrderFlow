@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Inventory.Application.DTOs;
 using Inventory.Application.Abstractions;
+using Inventory.Application.DTOs;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Inventory.Api.Controllers;
@@ -29,8 +29,27 @@ public class StockController : ControllerBase
     [HttpPost("{sku}/adjust")]
     public async Task<ActionResult<StockItemDto>> AdjustStock(string sku, [FromBody] AdjustStockRequest request)
     {
-        var result = await _stockService.AdjustStockAsync(sku, request.Quantity);
-        if (result == null) return NotFound();
+        if (string.IsNullOrWhiteSpace(sku))
+        {
+            return BadRequest(new { message = "SKU path parameter cannot be empty." });
+        }
+
+        if (request == null)
+        {
+            return BadRequest(new { message = "Request body cannot be null." });
+        }
+
+        if (request.Quantity == 0)
+        {
+            return BadRequest(new { message = "Adjustment quantity cannot be zero." });
+        }
+
+        var result = await _stockService.AdjustStockAsync(sku.Trim(), request.Quantity);
+        if (result == null)
+        {
+            return NotFound(new { message = $"SKU '{sku}' not found." });
+        }
+
         return Ok(result);
     }
 }

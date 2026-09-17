@@ -1,8 +1,8 @@
 using System;
 using System.Threading.Tasks;
-using Payments.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Payments.Application.Abstractions;
 
 namespace Payments.Api.Controllers;
 
@@ -10,9 +10,9 @@ namespace Payments.Api.Controllers;
 [Route("[controller]")]
 public class PaymentsController : ControllerBase
 {
-    private readonly PaymentsDbContext _dbContext;
+    private readonly IPaymentsDbContext _dbContext;
 
-    public PaymentsController(PaymentsDbContext dbContext)
+    public PaymentsController(IPaymentsDbContext dbContext)
     {
         _dbContext = dbContext;
     }
@@ -21,6 +21,11 @@ public class PaymentsController : ControllerBase
     [HttpGet("{orderId:guid}")]
     public async Task<IActionResult> GetPaymentByOrderId(Guid orderId)
     {
+        if (orderId == Guid.Empty)
+        {
+            return BadRequest(new { message = "Invalid Order ID." });
+        }
+
         var payment = await _dbContext.Payments
             .AsNoTracking()
             .FirstOrDefaultAsync(x => x.OrderId == orderId);
