@@ -27,9 +27,15 @@ public static class DependencyInjection
         services.AddScoped<IStockService, StockService>();
 
         // Register individual Application handlers
-        services.AddScoped<IIntegrationEventHandler<OrderPlacedEvent>, OrderPlacedHandler>();
-        services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, PaymentSucceededHandler>();
-        services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, PaymentFailedHandler>();
+        services.AddScoped<
+            IIntegrationEventHandler<OrderPlacedEvent>, 
+            OrderPlacedHandler>();
+        services.AddScoped<
+            IIntegrationEventHandler<PaymentSucceededEvent>, 
+            PaymentSucceededHandler>();
+        services.AddScoped<
+            IIntegrationEventHandler<PaymentFailedEvent>, 
+            PaymentFailedHandler>();
 
         services.AddHostedService<OutboxProcessorService>();
         services.AddHostedService<OrderEventConsumerService>();

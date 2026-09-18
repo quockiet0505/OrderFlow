@@ -181,3 +181,26 @@ public class OrdersController : ControllerBase
         return Ok(response);
     }
 }
+
+// Orders.Api
+// └── Controllers
+//     └── OrdersController
+//           │
+//           ├── HTTP Request
+//           ↓
+// Orders.Application
+// ├── Abstractions
+// │   ├── ICreateOrderHandler
+// │   ├── IGetOrderHandler
+// │   └── IGetOrdersByCustomerHandler
+// │
+// ├── DTOs
+// │   ├── CreateOrderRequest
+// │   ├── CreateOrderResponse
+// │   ├── OrderResponse
+// │   └── OrderSummaryResponse
+// │
+// └── Handlers
+//     ├── CreateOrderHandler
+//     ├── GetOrderHandler
+//     └── GetOrdersByCustomerHandler

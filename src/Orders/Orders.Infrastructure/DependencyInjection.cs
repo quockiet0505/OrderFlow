@@ -25,10 +25,19 @@ public static class DependencyInjection
         services.AddScoped<IOrdersDbContext>(sp => sp.GetRequiredService<OrdersDbContext>());
 
         // Register individual Application handlers
-        services.AddScoped<IIntegrationEventHandler<ReservationSucceededEvent>, ReservationSucceededHandler>();
-        services.AddScoped<IIntegrationEventHandler<ReservationFailedEvent>, ReservationFailedHandler>();
-        services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, PaymentSucceededHandler>();
-        services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, PaymentFailedHandler>();
+        services.AddScoped<
+            IIntegrationEventHandler<ReservationSucceededEvent>, 
+            ReservationSucceededHandler>();
+        services.AddScoped<
+            IIntegrationEventHandler<ReservationFailedEvent>, 
+            ReservationFailedHandler>();
+        services.AddScoped<
+            IIntegrationEventHandler<PaymentSucceededEvent>, 
+            PaymentSucceededHandler>();
+        services.AddScoped<
+            IIntegrationEventHandler<PaymentFailedEvent>, 
+            PaymentFailedHandler>();
+        services.AddScoped< ICreateOrderHandler, CreateOrderHandler>();
 
         services.AddHostedService<OutboxProcessorService>();
         services.AddHostedService<ReservationEventConsumerService>();
