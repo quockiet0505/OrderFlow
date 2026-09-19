@@ -24,10 +24,11 @@ public static class DependencyInjection
 
         services.AddScoped<IPaymentsDbContext>(sp => sp.GetRequiredService<PaymentsDbContext>());
 
-        // Register individual Application handler
-        services.AddScoped<
-            IIntegrationEventHandler<ReservationSucceededEvent>, 
-            ReservationSucceededHandler>();
+        // Register Integration Event Handler
+        services.AddScoped<IIntegrationEventHandler<ReservationSucceededEvent>, ReservationSucceededHandler>();
+
+        // Register API Use Case Handler
+        services.AddScoped<IGetPaymentHandler, GetPaymentHandler>();
 
         services.AddHostedService<OutboxProcessorService>();
         services.AddHostedService<ReservationEventConsumerService>();

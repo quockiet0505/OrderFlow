@@ -1,7 +1,7 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Payments.Application.Abstractions;
 
 namespace Payments.Api.Controllers;
@@ -10,38 +10,28 @@ namespace Payments.Api.Controllers;
 [Route("[controller]")]
 public class PaymentsController : ControllerBase
 {
-    private readonly IPaymentsDbContext _dbContext;
+    private readonly IGetPaymentHandler _getPaymentHandler;
 
-    public PaymentsController(IPaymentsDbContext dbContext)
+    public PaymentsController(IGetPaymentHandler getPaymentHandler)
     {
-        _dbContext = dbContext;
+        _getPaymentHandler = getPaymentHandler;
     }
 
     // Get payment by order ID
     [HttpGet("{orderId:guid}")]
-    public async Task<IActionResult> GetPaymentByOrderId(Guid orderId)
+    public async Task<IActionResult> GetPaymentByOrderId(Guid orderId, CancellationToken cancellationToken)
     {
         if (orderId == Guid.Empty)
         {
             return BadRequest(new { message = "Invalid Order ID." });
         }
 
-        var payment = await _dbContext.Payments
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.OrderId == orderId);
-
+        var payment = await _getPaymentHandler.HandleAsync(orderId, cancellationToken);
         if (payment == null)
         {
             return NotFound(new { message = $"No payment record found for orderId: {orderId}" });
         }
 
-        return Ok(new
-        {
-            paymentId = payment.Id,
-            orderId = payment.OrderId,
-            amount = payment.Amount,
-            status = payment.Status.ToString(),
-            createdAt = payment.CreatedAt
-        });
+        return Ok(payment);
     }
 }
