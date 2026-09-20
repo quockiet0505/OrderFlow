@@ -20,7 +20,11 @@ public abstract class OutboxProcessorBase<TDbContext, TOutboxMessage> : Backgrou
     private readonly string _topic;
     protected readonly ILogger Logger;
 
-    protected OutboxProcessorBase(IServiceProvider serviceProvider, string pulsarUrl, string topic, ILogger logger)
+    protected OutboxProcessorBase(
+        IServiceProvider serviceProvider, 
+        string pulsarUrl, 
+        string topic, 
+        ILogger logger)
     {
         _serviceProvider = serviceProvider;
         _pulsarUrl = pulsarUrl;

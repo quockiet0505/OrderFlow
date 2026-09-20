@@ -24,13 +24,11 @@ public static class DependencyInjection
 
         services.AddScoped<IOrdersDbContext>(sp => sp.GetRequiredService<OrdersDbContext>());
 
-        // Register Integration Event Handlers
         services.AddScoped<IIntegrationEventHandler<ReservationSucceededEvent>, ReservationSucceededHandler>();
         services.AddScoped<IIntegrationEventHandler<ReservationFailedEvent>, ReservationFailedHandler>();
         services.AddScoped<IIntegrationEventHandler<PaymentSucceededEvent>, PaymentSucceededHandler>();
         services.AddScoped<IIntegrationEventHandler<PaymentFailedEvent>, PaymentFailedHandler>();
 
-        // Register API Use Case Handlers
         services.AddScoped<ICreateOrderHandler, CreateOrderHandler>();
         services.AddScoped<IGetOrderHandler, GetOrderHandler>();
         services.AddScoped<IGetOrdersByCustomerHandler, GetOrdersByCustomerHandler>();

@@ -40,7 +40,6 @@ public class OrderPlacedHandler : IIntegrationEventHandler<OrderPlacedEvent>
             return;
         }
 
-        // Validate line items
         foreach (var line in @event.Lines)
         {
             if (string.IsNullOrWhiteSpace(line.Sku) || line.Quantity <= 0 || line.UnitPrice < 0)
@@ -53,7 +52,6 @@ public class OrderPlacedHandler : IIntegrationEventHandler<OrderPlacedEvent>
             }
         }
 
-        // Deduplication check: Avoid duplicate reservations if event is re-processed
         var existingReservations = await _dbContext.Reservations
             .Where(x => x.OrderId == @event.OrderId)
             .ToListAsync(cancellationToken);
@@ -64,7 +62,6 @@ public class OrderPlacedHandler : IIntegrationEventHandler<OrderPlacedEvent>
             return;
         }
 
-        // Aggregate duplicated SKUs in order lines (e.g. multiple lines with same SKU)
         var aggregatedLines = @event.Lines
             .GroupBy(l => l.Sku)
             .Select(g => new
@@ -78,7 +75,6 @@ public class OrderPlacedHandler : IIntegrationEventHandler<OrderPlacedEvent>
         bool isSuccess = true;
         string failureReason = string.Empty;
 
-        // Check stock availability for all aggregated items
         foreach (var itemDemand in aggregatedLines)
         {
             var item = await _dbContext.StockItems.FirstOrDefaultAsync(x => x.Sku == itemDemand.Sku, cancellationToken);

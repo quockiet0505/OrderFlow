@@ -17,7 +17,11 @@ public abstract class PulsarConsumerBase : BackgroundService
     private readonly string _subscription;
     protected readonly ILogger Logger;
 
-    protected PulsarConsumerBase(string pulsarUrl, string topic, string subscription, ILogger logger)
+    protected PulsarConsumerBase(
+        string pulsarUrl, 
+        string topic, 
+        string subscription, 
+        ILogger logger)
     {
         _pulsarUrl = pulsarUrl;
         _topic = topic;
@@ -25,7 +29,11 @@ public abstract class PulsarConsumerBase : BackgroundService
         Logger = logger;
     }
 
-    protected abstract Task ConsumeMessageAsync(string topic, string messageJson, CancellationToken cancellationToken);
+    protected abstract Task ConsumeMessageAsync(
+        string topic, 
+        string messageJson, 
+        CancellationToken cancellationToken
+    );
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -56,7 +64,6 @@ public abstract class PulsarConsumerBase : BackgroundService
             {
                 Logger.LogError(ex, "Error processing message from topic {Topic}", _topic);
                 
-                // Fallback DLQ logic
                 if (message.RedeliveryCount >= 3)
                 {
                     Logger.LogWarning("Message exceeded max redelivery count. Sending to DLQ.");
@@ -66,7 +73,6 @@ public abstract class PulsarConsumerBase : BackgroundService
                 }
                 else
                 {
-                    // Delay before redelivery in case of transient errors like DB lock
                     await Task.Delay(1000, stoppingToken); 
                 }
             }

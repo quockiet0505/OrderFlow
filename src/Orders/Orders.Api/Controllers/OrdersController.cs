@@ -25,7 +25,6 @@ public class OrdersController : ControllerBase
         _getOrdersByCustomerHandler = getOrdersByCustomerHandler;
     }
 
-    // Create new order
     [HttpPost]
     public async Task<IActionResult> CreateOrder([FromBody] CreateOrderApiRequest request, CancellationToken cancellationToken)
     {
@@ -33,7 +32,6 @@ public class OrdersController : ControllerBase
         return Accepted(result);
     }
 
-    // Get order by ID
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> GetOrderById(Guid id, CancellationToken cancellationToken)
     {
@@ -46,7 +44,6 @@ public class OrdersController : ControllerBase
         return Ok(order);
     }
 
-    // Get orders by customer ID
     [HttpGet]
     public async Task<IActionResult> GetOrdersByCustomer([FromQuery] string customerId, CancellationToken cancellationToken)
     {

@@ -17,7 +17,6 @@ public class PaymentsController : ControllerBase
         _getPaymentHandler = getPaymentHandler;
     }
 
-    // Get payment by order ID
     [HttpGet("{orderId:guid}")]
     public async Task<IActionResult> GetPaymentByOrderId(Guid orderId, CancellationToken cancellationToken)
     {

@@ -50,12 +50,16 @@ public class ReservationEventConsumerService : PulsarConsumerBase
 
         await handleEvent();
 
-        dbContext.InboxMessages.Add(new InboxMessage { EventId = eventId, ProcessedAt = DateTime.UtcNow });
+        dbContext.InboxMessages.Add(
+            new InboxMessage { EventId = eventId, ProcessedAt = DateTime.UtcNow });
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }
 
-    protected override async Task ConsumeMessageAsync(string topic, string messageJson, CancellationToken cancellationToken)
+    protected override async Task ConsumeMessageAsync(
+        string topic, 
+        string messageJson, 
+        CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<PaymentsDbContext>();
@@ -64,7 +68,6 @@ public class ReservationEventConsumerService : PulsarConsumerBase
         using var doc = JsonDocument.Parse(messageJson);
         var root = doc.RootElement;
         
-        // Ignore ReservationFailedEvent
         if (root.TryGetProperty("Reason", out _)) return;
 
         if (!root.TryGetProperty("EventId", out var eventIdProp) || !Guid.TryParse(eventIdProp.GetString(), out var eventId)) return;

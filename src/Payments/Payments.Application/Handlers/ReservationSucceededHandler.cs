@@ -37,7 +37,6 @@ public class ReservationSucceededHandler : IIntegrationEventHandler<ReservationS
             return;
         }
 
-        // Validate line values
         foreach (var line in @event.Lines)
         {
             if (line.Quantity <= 0 || line.UnitPrice < 0)
@@ -48,7 +47,6 @@ public class ReservationSucceededHandler : IIntegrationEventHandler<ReservationS
             }
         }
 
-        // Idempotency check: check if payment record already exists for OrderId
         var existingPayment = await _dbContext.Payments
             .FirstOrDefaultAsync(p => p.OrderId == @event.OrderId, cancellationToken);
 
@@ -60,8 +58,7 @@ public class ReservationSucceededHandler : IIntegrationEventHandler<ReservationS
 
         decimal totalAmount = @event.Lines.Sum(l => l.Quantity * l.UnitPrice);
 
-        // Fake payment gateway rule: fails whenever the order total ends in .99 (e.g., 19.99)
-        bool isFailure = Math.Abs((totalAmount * 100) % 100) == 99 || totalAmount.ToString("F2").EndsWith(".99");
+        bool isFailure = Math.Abs((totalAmount * 100) % 100) == 99;
 
         var payment = new Payment
         {

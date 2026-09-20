@@ -26,7 +26,6 @@ public static class DependencyInjection
         services.AddScoped<IInventoryDbContext>(sp => sp.GetRequiredService<InventoryDbContext>());
         services.AddScoped<IStockService, StockService>();
 
-        // Register individual Application handlers
         services.AddScoped<
             IIntegrationEventHandler<OrderPlacedEvent>, 
             OrderPlacedHandler>();

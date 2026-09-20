@@ -24,10 +24,8 @@ public static class DependencyInjection
 
         services.AddScoped<IPaymentsDbContext>(sp => sp.GetRequiredService<PaymentsDbContext>());
 
-        // Register Integration Event Handler
         services.AddScoped<IIntegrationEventHandler<ReservationSucceededEvent>, ReservationSucceededHandler>();
 
-        // Register API Use Case Handler
         services.AddScoped<IGetPaymentHandler, GetPaymentHandler>();
 
         services.AddHostedService<OutboxProcessorService>();

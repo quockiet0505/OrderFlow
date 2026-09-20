@@ -55,7 +55,10 @@ public class PaymentEventConsumerService : PulsarConsumerBase
         await transaction.CommitAsync(cancellationToken);
     }
 
-    protected override async Task ConsumeMessageAsync(string topic, string messageJson, CancellationToken cancellationToken)
+    protected override async Task ConsumeMessageAsync(
+        string topic, 
+        string messageJson, 
+        CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<OrdersDbContext>();
