@@ -1,8 +1,9 @@
 using System;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using DotPulsar.Abstractions;
 using Inventory.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using OrderFlow.Contracts.Constants;
 using Shared.Infrastructure.Messaging;
 using LocalOutbox = Inventory.Domain.Entities.OutboxMessage;
 
@@ -12,12 +13,12 @@ public class OutboxProcessorService : OutboxProcessorBase<InventoryDbContext, Lo
 {
     public OutboxProcessorService(
         IServiceProvider serviceProvider,
-        IConfiguration configuration,
+        IPulsarClient pulsarClient,
         ILogger<OutboxProcessorService> logger)
         : base(
             serviceProvider,
-            configuration["Pulsar:ServiceUrl"] ?? "pulsar://localhost:6650",
-            "persistent://public/default/reservation-events",
+            pulsarClient,
+            PulsarTopics.ReservationEvents,
             logger)
     {
     }

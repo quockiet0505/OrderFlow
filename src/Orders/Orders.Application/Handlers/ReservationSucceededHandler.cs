@@ -53,7 +53,7 @@ public class ReservationSucceededHandler : IIntegrationEventHandler<ReservationS
         }
         else
         {
-            _logger.LogInformation("Order {OrderId} already in status {Status}, ignoring late ReservationSucceededEvent", order.Id, order.Status);
+            _logger.LogInformation("Order {OrderId} already in status {Status}", order.Id, order.Status);
         }
     }
 }

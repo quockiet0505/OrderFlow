@@ -1,7 +1,8 @@
 using System;
+using DotPulsar.Abstractions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using OrderFlow.Contracts.Constants;
 using Payments.Infrastructure.Persistence;
 using Shared.Infrastructure.Messaging;
 using LocalOutbox = Payments.Domain.Entities.OutboxMessage;
@@ -12,12 +13,12 @@ public class OutboxProcessorService : OutboxProcessorBase<PaymentsDbContext, Loc
 {
     public OutboxProcessorService(
         IServiceProvider serviceProvider,
-        IConfiguration configuration,
+        IPulsarClient pulsarClient,
         ILogger<OutboxProcessorService> logger)
         : base(
             serviceProvider,
-            configuration["Pulsar:ServiceUrl"] ?? "pulsar://localhost:6650",
-            "persistent://public/default/payment-events",
+            pulsarClient,
+            PulsarTopics.PaymentEvents,
             logger)
     {
     }

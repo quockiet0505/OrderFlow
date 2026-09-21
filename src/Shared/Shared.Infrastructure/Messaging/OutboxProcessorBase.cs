@@ -3,6 +3,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DotPulsar;
+using DotPulsar.Abstractions;
 using DotPulsar.Extensions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,18 +17,18 @@ public abstract class OutboxProcessorBase<TDbContext, TOutboxMessage> : Backgrou
     where TOutboxMessage : class
 {
     private readonly IServiceProvider _serviceProvider;
-    private readonly string _pulsarUrl;
+    private readonly IPulsarClient _pulsarClient;
     private readonly string _topic;
     protected readonly ILogger Logger;
 
     protected OutboxProcessorBase(
         IServiceProvider serviceProvider, 
-        string pulsarUrl, 
+        IPulsarClient pulsarClient, 
         string topic, 
         ILogger logger)
     {
         _serviceProvider = serviceProvider;
-        _pulsarUrl = pulsarUrl;
+        _pulsarClient = pulsarClient;
         _topic = topic;
         Logger = logger;
     }
@@ -41,11 +42,7 @@ public abstract class OutboxProcessorBase<TDbContext, TOutboxMessage> : Backgrou
     {
         await Task.Delay(3000, stoppingToken);
 
-        await using var client = PulsarClient.Builder()
-            .ServiceUrl(new Uri(_pulsarUrl))
-            .Build();
-
-        await using var producer = client.NewProducer()
+        await using var producer = _pulsarClient.NewProducer()
             .Topic(_topic)
             .Create();
 
@@ -90,3 +87,4 @@ public abstract class OutboxProcessorBase<TDbContext, TOutboxMessage> : Backgrou
         }
     }
 }
+

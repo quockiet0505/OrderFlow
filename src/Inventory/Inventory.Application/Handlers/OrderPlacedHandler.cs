@@ -8,6 +8,7 @@ using Inventory.Domain.Entities;
 using Inventory.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using OrderFlow.Contracts.Constants;
 using OrderFlow.Contracts.DTOs;
 using OrderFlow.Contracts.Events;
 
@@ -132,7 +133,7 @@ public class OrderPlacedHandler : IIntegrationEventHandler<OrderPlacedEvent>
         var outboxMessage = new OutboxMessage
         {
             EventId = outEvent.EventId,
-            Topic = "persistent://public/default/reservation-events",
+            Topic = PulsarTopics.ReservationEvents,
             Payload = JsonSerializer.Serialize((object)outEvent),
             CreatedAt = DateTime.UtcNow
         };

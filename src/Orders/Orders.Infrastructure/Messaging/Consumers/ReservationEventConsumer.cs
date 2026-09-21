@@ -2,10 +2,11 @@ using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using DotPulsar.Abstractions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using OrderFlow.Contracts.Constants;
 using OrderFlow.Contracts.Events;
 using Orders.Domain.Entities;
 using Orders.Infrastructure.Persistence;
@@ -19,12 +20,12 @@ public class ReservationEventConsumerService : PulsarConsumerBase
 
     public ReservationEventConsumerService(
         IServiceProvider serviceProvider,
-        IConfiguration configuration,
+        IPulsarClient pulsarClient,
         ILogger<ReservationEventConsumerService> logger)
         : base(
-            configuration["Pulsar:ServiceUrl"] ?? "pulsar://localhost:6650",
-            "persistent://public/default/reservation-events",
-            "orders-saga-sub",
+            pulsarClient,
+            PulsarTopics.ReservationEvents,
+            PulsarSubscriptions.OrdersReservation,
             logger)
     {
         _serviceProvider = serviceProvider;
@@ -57,7 +58,7 @@ public class ReservationEventConsumerService : PulsarConsumerBase
 
     protected override async Task ConsumeMessageAsync(
         string topic,
-        string messageJson, 
+        string messageJson,
         CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
@@ -68,7 +69,7 @@ public class ReservationEventConsumerService : PulsarConsumerBase
 
         if (!root.TryGetProperty("EventId", out var eventIdProp) || !Guid.TryParse(eventIdProp.GetString(), out var eventId)) return;
 
-        if (root.TryGetProperty("Reason", out _)) 
+        if (root.TryGetProperty("Reason", out _))
         {
             var @event = JsonSerializer.Deserialize<ReservationFailedEvent>(
                 messageJson,
@@ -79,12 +80,12 @@ public class ReservationEventConsumerService : PulsarConsumerBase
             var handler = scope.ServiceProvider.GetRequiredService<IIntegrationEventHandler<ReservationFailedEvent>>();
 
             await ProcessEventAsync(
-                dbContext, 
-                eventId, 
+                dbContext,
+                eventId,
                 () => handler.HandleAsync(@event, cancellationToken),
                 cancellationToken);
         }
-        else 
+        else
         {
             var @event = JsonSerializer.Deserialize<ReservationSucceededEvent>(
                 messageJson,

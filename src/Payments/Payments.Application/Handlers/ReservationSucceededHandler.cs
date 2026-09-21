@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using OrderFlow.Contracts.Constants;
 using OrderFlow.Contracts.Events;
 using Payments.Application.Abstractions;
 using Payments.Domain.Entities;
@@ -33,7 +34,7 @@ public class ReservationSucceededHandler : IIntegrationEventHandler<ReservationS
 
         if (@event.Lines == null || !@event.Lines.Any())
         {
-            _logger.LogWarning("ReservationSucceededEvent for OrderId {OrderId} contains no reserved lines.", @event.OrderId);
+            _logger.LogWarning("ReservationSucceededEvent for OrderId {OrderId}", @event.OrderId);
             return;
         }
 
@@ -41,8 +42,7 @@ public class ReservationSucceededHandler : IIntegrationEventHandler<ReservationS
         {
             if (line.Quantity <= 0 || line.UnitPrice < 0)
             {
-                _logger.LogWarning("Invalid line values in ReservationSucceededEvent for OrderId {OrderId}: SKU={Sku}, Qty={Qty}, Price={Price}",
-                    @event.OrderId, line.Sku, line.Quantity, line.UnitPrice);
+                _logger.LogWarning("Invalid line values in ReservationSucceededEvent");
                 return;
             }
         }
@@ -78,7 +78,7 @@ public class ReservationSucceededHandler : IIntegrationEventHandler<ReservationS
         var outboxMessage = new OutboxMessage
         {
             EventId = outEvent.EventId,
-            Topic = "persistent://public/default/payment-events",
+            Topic = PulsarTopics.PaymentEvents,
             Payload = JsonSerializer.Serialize((object)outEvent),
             CreatedAt = DateTime.UtcNow
         };

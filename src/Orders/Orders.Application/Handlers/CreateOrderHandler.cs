@@ -1,4 +1,5 @@
 using System.Text.Json;
+using OrderFlow.Contracts.Constants;
 using OrderFlow.Contracts.DTOs;
 using OrderFlow.Contracts.Events;
 using Orders.Application.Abstractions;
@@ -70,7 +71,7 @@ public class CreateOrderHandler : ICreateOrderHandler
         var outboxMessage = new OutboxMessage
         {
             EventId = orderPlacedEvent.EventId,
-            Topic = "persistent://public/default/orders.order-placed",
+            Topic = PulsarTopics.OrderPlaced,
             Payload = JsonSerializer.Serialize(orderPlacedEvent),
             CreatedAt = DateTime.UtcNow
         };

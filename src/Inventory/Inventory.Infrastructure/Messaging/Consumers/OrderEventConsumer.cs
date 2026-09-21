@@ -2,12 +2,13 @@ using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using DotPulsar.Abstractions;
 using Inventory.Domain.Entities;
 using Inventory.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using OrderFlow.Contracts.Constants;
 using OrderFlow.Contracts.Events;
 using Shared.Infrastructure.Messaging;
 
@@ -19,12 +20,12 @@ public class OrderEventConsumerService : PulsarConsumerBase
 
     public OrderEventConsumerService(
         IServiceProvider serviceProvider,
-        IConfiguration configuration,
+        IPulsarClient pulsarClient,
         ILogger<OrderEventConsumerService> logger)
         : base(
-            configuration["Pulsar:ServiceUrl"] ?? "pulsar://localhost:6650",
-            "persistent://public/default/orders.order-placed",
-            "inventory-order-sub",
+            pulsarClient,
+            PulsarTopics.OrderPlaced,
+            PulsarSubscriptions.InventoryOrder,
             logger)
     {
         _serviceProvider = serviceProvider;
@@ -62,7 +63,7 @@ public class OrderEventConsumerService : PulsarConsumerBase
         var handler = scope.ServiceProvider.GetRequiredService<IIntegrationEventHandler<OrderPlacedEvent>>();
 
         var orderEvent = JsonSerializer.Deserialize<OrderPlacedEvent>(
-            messageJson, 
+            messageJson,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
         );
         if (orderEvent == null || orderEvent.EventId == Guid.Empty) return;

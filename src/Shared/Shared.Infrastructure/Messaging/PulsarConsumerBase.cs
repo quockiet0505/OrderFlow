@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Buffers;
 using DotPulsar;
+using DotPulsar.Abstractions;
 using DotPulsar.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -12,18 +13,18 @@ namespace Shared.Infrastructure.Messaging;
 
 public abstract class PulsarConsumerBase : BackgroundService
 {
-    private readonly string _pulsarUrl;
+    private readonly IPulsarClient _pulsarClient;
     private readonly string _topic;
     private readonly string _subscription;
     protected readonly ILogger Logger;
 
     protected PulsarConsumerBase(
-        string pulsarUrl, 
+        IPulsarClient pulsarClient, 
         string topic, 
         string subscription, 
         ILogger logger)
     {
-        _pulsarUrl = pulsarUrl;
+        _pulsarClient = pulsarClient;
         _topic = topic;
         _subscription = subscription;
         Logger = logger;
@@ -39,11 +40,7 @@ public abstract class PulsarConsumerBase : BackgroundService
     {
         await Task.Delay(3000, stoppingToken);
 
-        await using var client = PulsarClient.Builder()
-            .ServiceUrl(new Uri(_pulsarUrl))
-            .Build();
-
-        await using var consumer = client.NewConsumer()
+        await using var consumer = _pulsarClient.NewConsumer()
             .Topic(_topic)
             .SubscriptionName(_subscription)
             .SubscriptionType(SubscriptionType.Shared)
@@ -67,7 +64,7 @@ public abstract class PulsarConsumerBase : BackgroundService
                 if (message.RedeliveryCount >= 3)
                 {
                     Logger.LogWarning("Message exceeded max redelivery count. Sending to DLQ.");
-                    await using var dlqProducer = client.NewProducer().Topic($"{_topic}-dlq").Create();
+                    await using var dlqProducer = _pulsarClient.NewProducer().Topic($"{_topic}-dlq").Create();
                     await dlqProducer.Send(message.Data, stoppingToken);
                     await consumer.Acknowledge(message, stoppingToken);
                 }
@@ -79,3 +76,4 @@ public abstract class PulsarConsumerBase : BackgroundService
         }
     }
 }
+

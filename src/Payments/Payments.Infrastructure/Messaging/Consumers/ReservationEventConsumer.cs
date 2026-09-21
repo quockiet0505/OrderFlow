@@ -2,10 +2,11 @@ using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using DotPulsar.Abstractions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using OrderFlow.Contracts.Constants;
 using OrderFlow.Contracts.Events;
 using Payments.Domain.Entities;
 using Payments.Infrastructure.Persistence;
@@ -19,12 +20,12 @@ public class ReservationEventConsumerService : PulsarConsumerBase
 
     public ReservationEventConsumerService(
         IServiceProvider serviceProvider,
-        IConfiguration configuration,
+        IPulsarClient pulsarClient,
         ILogger<ReservationEventConsumerService> logger)
         : base(
-            configuration["Pulsar:ServiceUrl"] ?? "pulsar://localhost:6650",
-            "persistent://public/default/reservation-events",
-            "payments-reservation-sub",
+            pulsarClient,
+            PulsarTopics.ReservationEvents,
+            PulsarSubscriptions.PaymentsReservation,
             logger)
     {
         _serviceProvider = serviceProvider;
@@ -57,8 +58,8 @@ public class ReservationEventConsumerService : PulsarConsumerBase
     }
 
     protected override async Task ConsumeMessageAsync(
-        string topic, 
-        string messageJson, 
+        string topic,
+        string messageJson,
         CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
@@ -67,7 +68,7 @@ public class ReservationEventConsumerService : PulsarConsumerBase
 
         using var doc = JsonDocument.Parse(messageJson);
         var root = doc.RootElement;
-        
+
         if (root.TryGetProperty("Reason", out _)) return;
 
         if (!root.TryGetProperty("EventId", out var eventIdProp) || !Guid.TryParse(eventIdProp.GetString(), out var eventId)) return;
@@ -82,7 +83,7 @@ public class ReservationEventConsumerService : PulsarConsumerBase
             Logger.LogWarning("Failed to deserialize ReservationSucceededEvent from message: {MessageJson}", messageJson);
             return;
         }
-        
+
         await ProcessEventAsync(
             dbContext,
             eventId,

@@ -48,7 +48,7 @@ public class ReservationFailedHandler : IIntegrationEventHandler<ReservationFail
             order.SagaState.LastProcessedEventId = @event.EventId;
 
             await _dbContext.SaveChangesAsync(cancellationToken);
-            _logger.LogInformation("Order {OrderId} status updated to Cancelled due to reservation failure. Reason: {Reason}", order.Id, @event.Reason);
+            _logger.LogInformation("Order {OrderId} status updated to Cancelled. Reason: {Reason}", order.Id, @event.Reason);
         }
     }
 }

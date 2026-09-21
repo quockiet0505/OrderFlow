@@ -2,10 +2,11 @@ using System;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using DotPulsar.Abstractions;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using OrderFlow.Contracts.Constants;
 using OrderFlow.Contracts.Events;
 using Orders.Domain.Entities;
 using Orders.Infrastructure.Persistence;
@@ -19,12 +20,12 @@ public class PaymentEventConsumerService : PulsarConsumerBase
 
     public PaymentEventConsumerService(
         IServiceProvider serviceProvider,
-        IConfiguration configuration,
+        IPulsarClient pulsarClient,
         ILogger<PaymentEventConsumerService> logger)
         : base(
-            configuration["Pulsar:ServiceUrl"] ?? "pulsar://localhost:6650",
-            "persistent://public/default/payment-events",
-            "orders-payment-sub",
+            pulsarClient,
+            PulsarTopics.PaymentEvents,
+            PulsarSubscriptions.OrdersPayment,
             logger)
     {
         _serviceProvider = serviceProvider;
@@ -35,7 +36,8 @@ public class PaymentEventConsumerService : PulsarConsumerBase
         Guid eventId,
         Func<Task> handleEvent,
         CancellationToken cancellationToken
-    ){
+    )
+    {
         await using var transaction =
             await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
@@ -56,8 +58,8 @@ public class PaymentEventConsumerService : PulsarConsumerBase
     }
 
     protected override async Task ConsumeMessageAsync(
-        string topic, 
-        string messageJson, 
+        string topic,
+        string messageJson,
         CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
@@ -65,10 +67,10 @@ public class PaymentEventConsumerService : PulsarConsumerBase
 
         using var doc = JsonDocument.Parse(messageJson);
         var root = doc.RootElement;
-        
+
         if (!root.TryGetProperty("EventId", out var eventIdProp) || !Guid.TryParse(eventIdProp.GetString(), out var eventId)) return;
 
-        if (root.TryGetProperty("Reason", out _)) 
+        if (root.TryGetProperty("Reason", out _))
         {
             var @event = JsonSerializer.Deserialize<PaymentFailedEvent>(
                 messageJson,
@@ -77,14 +79,14 @@ public class PaymentEventConsumerService : PulsarConsumerBase
                 ?? throw new InvalidOperationException("Failed to deserialize PaymentFailedEvent");
 
             var handler = scope.ServiceProvider.GetRequiredService<IIntegrationEventHandler<PaymentFailedEvent>>();
-            
+
             await ProcessEventAsync(
-                dbContext, 
-                eventId, 
-                () => handler.HandleAsync(@event, cancellationToken), 
+                dbContext,
+                eventId,
+                () => handler.HandleAsync(@event, cancellationToken),
                 cancellationToken);
         }
-        else 
+        else
         {
             var @event = JsonSerializer.Deserialize<PaymentSucceededEvent>(
                 messageJson,

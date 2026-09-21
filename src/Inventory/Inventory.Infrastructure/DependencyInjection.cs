@@ -26,6 +26,12 @@ public static class DependencyInjection
         services.AddScoped<IInventoryDbContext>(sp => sp.GetRequiredService<InventoryDbContext>());
         services.AddScoped<IStockService, StockService>();
 
+        services.AddSingleton<DotPulsar.Abstractions.IPulsarClient>(sp =>
+        {
+            var pulsarUrl = configuration["Pulsar:ServiceUrl"] ?? "pulsar://localhost:6650";
+            return DotPulsar.PulsarClient.Builder().ServiceUrl(new Uri(pulsarUrl)).Build();
+        });
+
         services.AddScoped<
             IIntegrationEventHandler<OrderPlacedEvent>, 
             OrderPlacedHandler>();
