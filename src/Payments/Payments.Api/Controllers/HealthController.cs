@@ -1,9 +1,7 @@
-using System;
 using System.Threading.Tasks;
-using DotPulsar;
+using DotPulsar.Abstractions;
 using Payments.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 
 namespace Payments.Api.Controllers;
 
@@ -12,30 +10,19 @@ namespace Payments.Api.Controllers;
 public class HealthController : ControllerBase
 {
     private readonly PaymentsDbContext _dbContext;
-    private readonly IConfiguration _configuration;
+    private readonly IPulsarClient _pulsarClient;
 
-    public HealthController(PaymentsDbContext dbContext, IConfiguration configuration)
+    public HealthController(PaymentsDbContext dbContext, IPulsarClient pulsarClient)
     {
         _dbContext = dbContext;
-        _configuration = configuration;
+        _pulsarClient = pulsarClient;
     }
 
     [HttpGet]
     public async Task<IActionResult> GetHealth()
     {
         bool dbHealthy = await _dbContext.Database.CanConnectAsync();
-        bool pulsarHealthy = false;
-
-        try
-        {
-            var pulsarUrl = _configuration["Pulsar:ServiceUrl"] ?? "pulsar://localhost:6650";
-            await using var client = PulsarClient.Builder().ServiceUrl(new Uri(pulsarUrl)).Build();
-            pulsarHealthy = client != null;
-        }
-        catch
-        {
-            pulsarHealthy = false;
-        }
+        bool pulsarHealthy = _pulsarClient != null;
 
         if (dbHealthy && pulsarHealthy)
         {
@@ -50,3 +37,4 @@ public class HealthController : ControllerBase
         });
     }
 }
+

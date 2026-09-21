@@ -1,25 +1,26 @@
+using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace Orders.Application.DTOs;
 
-public record CreateOrderApiRequest(
-    [property: Required(ErrorMessage = "CustomerId is required.")]
-    string CustomerId,
+public record CreateOrderApiRequest
+{
+    [Required(ErrorMessage = "CustomerId is required.")]
+    public string CustomerId { get; init; } = string.Empty;
 
-    [property: Required(ErrorMessage = "Order lines are required.")]
-    [property: MinLength(1, ErrorMessage = "Order must contain at least one line.")]
-    List<CreateOrderLineApiRequest> Lines
-);
+    [Required(ErrorMessage = "Order lines are required.")]
+    [MinLength(1, ErrorMessage = "Order must contain at least one line.")]
+    public List<CreateOrderLineApiRequest> Lines { get; init; } = new();
+}
 
-public record CreateOrderLineApiRequest(
-    [property: Required(ErrorMessage = "SKU is required.")]
-    string Sku,
+public record CreateOrderLineApiRequest
+{
+    [Required(ErrorMessage = "SKU is required.")]
+    public string Sku { get; init; } = string.Empty;
 
-    [property: Range(1, int.MaxValue,
-        ErrorMessage = "Quantity must be greater than zero.")]
-    int Quantity,
+    [Range(1, int.MaxValue, ErrorMessage = "Quantity must be greater than zero.")]
+    public int Quantity { get; init; }
 
-    [property: Range(0, double.MaxValue,
-        ErrorMessage = "UnitPrice cannot be negative.")]
-    decimal UnitPrice
-);
+    [Range(0, double.MaxValue, ErrorMessage = "UnitPrice cannot be negative.")]
+    public decimal UnitPrice { get; init; }
+}

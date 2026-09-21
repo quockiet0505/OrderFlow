@@ -42,48 +42,56 @@ public abstract class OutboxProcessorBase<TDbContext, TOutboxMessage> : Backgrou
     {
         await Task.Delay(3000, stoppingToken);
 
-        await using var producer = _pulsarClient.NewProducer()
-            .Topic(_topic)
-            .Create();
-
-        Logger.LogInformation("Outbox Processor started publishing to Pulsar topic '{Topic}'", _topic);
-
         while (!stoppingToken.IsCancellationRequested)
         {
             try
             {
-                using var scope = _serviceProvider.CreateScope();
-                var dbContext = scope.ServiceProvider.GetRequiredService<TDbContext>();
+                await using var producer = _pulsarClient.NewProducer()
+                    .Topic(_topic)
+                    .Create();
 
-                var messages = await GetOutboxDbSet(dbContext)
-                    .ToListAsync(stoppingToken);
+                Logger.LogInformation("Outbox Processor started publishing to Pulsar topic '{Topic}'", _topic);
 
-                int processedCount = 0;
-                foreach (var msg in messages)
+                while (!stoppingToken.IsCancellationRequested)
                 {
-                    if (IsProcessed(msg)) continue;
+                    using var scope = _serviceProvider.CreateScope();
+                    var dbContext = scope.ServiceProvider.GetRequiredService<TDbContext>();
 
-                    var payload = GetPayload(msg);
-                    var data = Encoding.UTF8.GetBytes(payload);
-                    await producer.Send(data, stoppingToken);
+                    var messages = await GetOutboxDbSet(dbContext)
+                        .ToListAsync(stoppingToken);
 
-                    MarkAsProcessed(msg);
-                    processedCount++;
+                    int processedCount = 0;
+                    foreach (var msg in messages)
+                    {
+                        if (IsProcessed(msg)) continue;
 
-                    if (processedCount >= 20) break;
+                        var payload = GetPayload(msg);
+                        var data = Encoding.UTF8.GetBytes(payload);
+                        await producer.Send(data, stoppingToken);
+
+                        MarkAsProcessed(msg);
+                        processedCount++;
+
+                        if (processedCount >= 20) break;
+                    }
+
+                    if (processedCount > 0)
+                    {
+                        await dbContext.SaveChangesAsync(stoppingToken);
+                    }
+
+                    await Task.Delay(2000, stoppingToken);
                 }
-
-                if (processedCount > 0)
-                {
-                    await dbContext.SaveChangesAsync(stoppingToken);
-                }
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "Error processing outbox messages for topic {Topic}", _topic);
+                Logger.LogWarning(ex, "Outbox Processor encountered an exception on topic '{Topic}'. Retrying in 3s...", _topic);
+                await Task.Delay(3000, stoppingToken);
             }
-
-            await Task.Delay(2000, stoppingToken);
         }
     }
 }

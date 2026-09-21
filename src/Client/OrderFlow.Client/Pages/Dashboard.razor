@@ -69,13 +69,19 @@
                         <tbody>
                             @foreach (var order in _orders)
                             {
+                                var effectiveId = order.EffectiveId;
+                                var shortCode = effectiveId != Guid.Empty ? $"ORD-{effectiveId.ToString().Substring(0, 8).ToUpper()}" : "ORD-UNKNOWN";
                                 <tr>
-                                    <td><small>@order.Id.ToString().Substring(0, 8)...</small></td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border font-monospace" title="@effectiveId">
+                                            @shortCode
+                                        </span>
+                                    </td>
                                     <td>
                                         <span class="badge @GetStatusBadgeClass(order.Status)">@order.Status</span>
                                     </td>
-                                    <td>@order.Total</td>
-                                    <td><small>@order.CreatedAt.ToLocalTime().ToString("HH:mm:ss")</small></td>
+                                    <td>@order.EffectiveTotal.ToString("N0") ₫</td>
+                                    <td><small>@order.EffectiveCreatedAt.ToLocalTime().ToString("HH:mm:ss")</small></td>
                                 </tr>
                             }
                         </tbody>
@@ -102,7 +108,7 @@
             
             if (_orders != null)
             {
-                _orders = _orders.OrderByDescending(o => o.CreatedAt).ToList();
+                _orders = _orders.OrderByDescending(o => o.EffectiveCreatedAt).ToList();
             }
         }
         catch (Exception ex)
@@ -132,8 +138,19 @@
     public class OrderDto
     {
         public Guid Id { get; set; }
+        public Guid OrderId { get; set; }
+        
         public string Status { get; set; } = "";
+        
         public decimal Total { get; set; }
+        public decimal TotalAmount { get; set; }
+        
         public DateTime CreatedAt { get; set; }
+        public DateTime DateTime { get; set; }
+
+        public Guid EffectiveId => Id != Guid.Empty ? Id : OrderId;
+        public decimal EffectiveTotal => Total != 0 ? Total : TotalAmount;
+        public DateTime EffectiveCreatedAt => CreatedAt != default ? CreatedAt : DateTime;
     }
 }
+

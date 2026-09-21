@@ -1,8 +1,9 @@
 namespace Orders.Application.DTOs;
 
 public record OrderSummaryResponse(
-    Guid OrderId,
+    Guid Id,
     string Status,
-    decimal TotalAmount,
-    DateTime DateTime
+    decimal Total,
+    DateTime CreatedAt
 );
+
