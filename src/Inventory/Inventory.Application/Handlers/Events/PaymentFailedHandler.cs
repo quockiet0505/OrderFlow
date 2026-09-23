@@ -45,7 +45,7 @@ public class PaymentFailedHandler : IIntegrationEventHandler<PaymentFailedEvent>
             var item = await _dbContext.StockItems.FirstOrDefaultAsync(x => x.Sku == reservation.Sku, cancellationToken);
             if (item != null)
             {
-                item.QuantityReserved = Math.Max(0, item.QuantityReserved - reservation.Quantity); // Restore available stock
+                item.QuantityReserved = Math.Max(0, item.QuantityReserved - reservation.Quantity); 
             }
         }
 

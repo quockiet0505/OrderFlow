@@ -9,7 +9,10 @@ public record PaymentSucceededEvent : IntegrationEvent
 
     public PaymentSucceededEvent() { }
 
-    public PaymentSucceededEvent(Guid orderId, Guid paymentId, decimal amount)
+    public PaymentSucceededEvent(
+        Guid orderId, 
+        Guid paymentId, 
+        decimal amount)
         : base(orderId)
     {
         PaymentId = paymentId;

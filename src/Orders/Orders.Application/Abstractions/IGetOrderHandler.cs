@@ -7,5 +7,7 @@ namespace Orders.Application.Abstractions;
 
 public interface IGetOrderHandler
 {
-    Task<OrderResponse?> HandleAsync(Guid orderId, CancellationToken cancellationToken = default);
+    Task<OrderResponse?> HandleAsync(
+        Guid orderId, 
+        CancellationToken cancellationToken = default);
 }

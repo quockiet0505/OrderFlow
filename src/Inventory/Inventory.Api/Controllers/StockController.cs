@@ -25,25 +25,17 @@ public class StockController : ControllerBase
     }
 
     [HttpPost("{sku}/adjust")]
-    public async Task<ActionResult<StockItemDto>> AdjustStock(string sku, [FromBody] AdjustStockRequest request)
+    public async Task<ActionResult<StockItemDto>> AdjustStock(
+        string sku, 
+        [FromBody] AdjustStockRequest request)
     {
         if (string.IsNullOrWhiteSpace(sku))
         {
             return BadRequest(new { message = "SKU path parameter cannot be empty." });
         }
 
-        if (request == null)
-        {
-            return BadRequest(new { message = "Request body cannot be null." });
-        }
-
-        if (request.Quantity == 0)
-        {
-            return BadRequest(new { message = "Adjustment quantity cannot be zero." });
-        }
-
         var result = await _stockService.AdjustStockAsync(sku.Trim(), request.Quantity);
-        if (result == null)
+        if (result is null)
         {
             return NotFound(new { message = $"SKU '{sku}' not found." });
         }

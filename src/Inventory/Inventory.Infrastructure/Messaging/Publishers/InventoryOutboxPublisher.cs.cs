@@ -18,7 +18,6 @@ public class OutboxProcessorService : OutboxProcessorBase<InventoryDbContext, Lo
             serviceProvider,
             pulsarClient,
             PulsarTopics.ReservationEvents,
-            logger)
-    {
-    }
+            logger
+        ){}
 }
