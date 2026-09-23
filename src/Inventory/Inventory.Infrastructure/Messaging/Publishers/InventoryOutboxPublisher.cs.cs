@@ -1,7 +1,6 @@
 using System;
 using DotPulsar.Abstractions;
 using Inventory.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using OrderFlow.Contracts.Constants;
 using Shared.Infrastructure.Messaging;
@@ -22,13 +21,4 @@ public class OutboxProcessorService : OutboxProcessorBase<InventoryDbContext, Lo
             logger)
     {
     }
-
-    protected override DbSet<LocalOutbox> GetOutboxDbSet(InventoryDbContext dbContext)
-    {
-        return dbContext.OutboxMessages;
-    }
-
-    protected override bool IsProcessed(LocalOutbox message) => message.PublishedAt != null;
-    protected override string GetPayload(LocalOutbox message) => message.Payload;
-    protected override void MarkAsProcessed(LocalOutbox message) => message.PublishedAt = DateTime.UtcNow;
 }

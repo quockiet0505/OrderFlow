@@ -1,8 +1,9 @@
 using System;
+using OrderFlow.Contracts.Abstractions;
 
 namespace Inventory.Domain.Entities;
 
-public class OutboxMessage
+public class OutboxMessage : IOutboxMessage
 {
     public long Id { get; set; }
     public Guid EventId { get; set; }
