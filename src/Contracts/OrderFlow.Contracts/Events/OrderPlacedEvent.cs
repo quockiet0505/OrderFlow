@@ -7,7 +7,7 @@ namespace OrderFlow.Contracts.Events;
 public record OrderPlacedEvent : IntegrationEvent
 {
     public string CustomerId { get; init; } = string.Empty;
-    public IReadOnlyCollection<OrderLineItemDto> Lines { get; init; } = new();
+    public IReadOnlyCollection<OrderLineItemDto> Lines { get; init; } = [];
     public decimal TotalAmount { get; init; }
 
     public OrderPlacedEvent() { }

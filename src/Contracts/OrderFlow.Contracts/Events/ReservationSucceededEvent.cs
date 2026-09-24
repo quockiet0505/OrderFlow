@@ -8,7 +8,7 @@ public record ReservationSucceededEvent : IntegrationEvent
 {
     public string ReservationId { get; init; } = string.Empty;
 
-    public IReadOnlyCollection<ReservedLineDto> Lines { get; init; } = new();
+    public IReadOnlyCollection<ReservedLineDto> Lines { get; init; } = [];
 
     public ReservationSucceededEvent() { }
 
