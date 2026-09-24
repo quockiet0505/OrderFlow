@@ -28,7 +28,7 @@
                     <input type="number" step="0.01" class="form-control" @bind="_unitPrice" />
                 </div>
 
-                <button class="btn btn-primary w-100" @onclick="SubmitOrder" disabled="@_isSubmitting">
+                <button class="btn btn-primary w-100" @onclick="SubmitOrderAsync" disabled="@_isSubmitting">
                     @if (_isSubmitting)
                     {
                         <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
@@ -74,7 +74,7 @@
     
     private Timer? _pollingTimer;
 
-    private async Task SubmitOrder()
+    private async Task SubmitOrderAsync()
     {
         _isSubmitting = true;
         _currentOrderId = null;
@@ -119,12 +119,12 @@
         _pollingTimer?.Dispose();
         _pollingTimer = new Timer(async _ =>
         {
-            await CheckOrderStatus();
+            await CheckOrderStatusAsync();
             await InvokeAsync(StateHasChanged);
         }, null, 0, 2000);
     }
 
-    private async Task CheckOrderStatus()
+    private async Task CheckOrderStatusAsync()
     {
         if (_currentOrderId == null) return;
         

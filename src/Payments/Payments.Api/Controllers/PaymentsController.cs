@@ -18,7 +18,7 @@ public class PaymentsController : ControllerBase
     }
 
     [HttpGet("{orderId:guid}")]
-    public async Task<IActionResult> GetPaymentByOrderId(Guid orderId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetPaymentByOrderIdAsync(Guid orderId, CancellationToken cancellationToken)
     {
         if (orderId == Guid.Empty)
         {

@@ -36,7 +36,9 @@ public class GetOrderHandler : IGetOrderHandler
             order.TotalAmount,
             order.SagaState?.ReservationCompleted ?? false,
             order.SagaState?.PaymentCompleted ?? false,
-            order.Lines.Select(l => new OrderLineResponse(l.Sku, l.Quantity, l.UnitPrice)).ToList(),
+            order.Lines
+                .Select(l => new OrderLineResponse(l.Sku, l.Quantity, l.UnitPrice))
+                .ToList(),
             order.CreatedAt,
             order.UpdatedAt
         );

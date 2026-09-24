@@ -19,7 +19,7 @@ public class HealthController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetHealth()
+    public async Task<IActionResult> GetHealthAsync()
     {
         bool dbHealthy = await _dbContext.Database.CanConnectAsync();
         bool pulsarHealthy = _pulsarClient != null;

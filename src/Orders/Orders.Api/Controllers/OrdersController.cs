@@ -26,14 +26,14 @@ public class OrdersController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateOrder([FromBody] CreateOrderApiRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateOrderAsync([FromBody] CreateOrderApiRequest request, CancellationToken cancellationToken)
     {
         var result = await _createOrderHandler.HandleAsync(request, cancellationToken);
         return Accepted(result);
     }
 
     [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetOrderById(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetOrderByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var order = await _getOrderHandler.HandleAsync(id, cancellationToken);
         if (order == null)
@@ -45,7 +45,7 @@ public class OrdersController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetOrdersByCustomer([FromQuery] string customerId, CancellationToken cancellationToken)
+    public async Task<IActionResult> GetOrdersByCustomerAsync([FromQuery] string customerId, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(customerId))
         {
@@ -56,4 +56,3 @@ public class OrdersController : ControllerBase
         return Ok(orders);
     }
 }
-

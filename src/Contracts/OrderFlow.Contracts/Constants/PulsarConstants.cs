@@ -5,7 +5,6 @@ public static class PulsarDefaults
     public const string DefaultServiceUrl = "pulsar://localhost:6650";
 }
 
-
 public static class PulsarTopics
 {
     public const string OrderPlaced = "persistent://public/default/orders.order-placed";
@@ -21,4 +20,3 @@ public static class PulsarSubscriptions
     public const string InventoryPayment = "inventory-payment-sub";
     public const string PaymentsReservation = "payments-reservation-sub";
 }
-
