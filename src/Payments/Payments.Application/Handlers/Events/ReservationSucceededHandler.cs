@@ -22,15 +22,15 @@ public class ReservationSucceededHandler : IIntegrationEventHandler<ReservationS
 
     public async Task HandleAsync(ReservationSucceededEvent @event, CancellationToken cancellationToken = default)
     {
-        if (@event is not null || @event.OrderId == Guid.Empty)
+        if (@event is null || @event.OrderId == Guid.Empty)
         {
             _logger.LogWarning("Received invalid ReservationSucceededEvent payload in Payments.");
             return;
         }
 
-        if (@event.Lines is not null || @event.Lines.Count()==0)
+        if (@event.Lines is null || @event.Lines.Count == 0)
         {
-            _logger.LogWarning("ReservationSucceededEvent");
+            _logger.LogWarning("ReservationSucceededEvent contains no lines.");
             return;
         }
 
