@@ -23,13 +23,13 @@ public class OrderPlacedHandler : IIntegrationEventHandler<OrderPlacedEvent>
 
     public async Task HandleAsync(OrderPlacedEvent @event, CancellationToken cancellationToken = default)
     {
-        if (@event == null || @event.OrderId == Guid.Empty)
+        if (@event is null || @event.OrderId == Guid.Empty)
         {
             _logger.LogWarning("Received null or empty OrderPlacedEvent payload.");
             return;
         }
 
-        if (@event.Lines == null || @event.Lines.Count()==0)
+        if (@event.Lines is null || @event.Lines.Count() == 0)
         {
             _logger.LogWarning("OrderPlacedEvent contains no order lines.");
             var emptyFailureEvent = new ReservationFailedEvent(@event.OrderId, "Order contains no items.");
