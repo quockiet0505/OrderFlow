@@ -5,10 +5,8 @@ using Inventory.Application.DTOs;
 
 namespace Inventory.Application.Abstractions;
 
-public interface IAdjustStockHandler
+public interface IGetStockHandler
 {
-    Task<StockItemDto> HandleAsync(
-        string sku,
-        int quantity,
+    Task<List<StockItemDto>> HandleAsync(
         CancellationToken cancellationToken = default);
 }

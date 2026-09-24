@@ -4,16 +4,15 @@ using System.Threading.Tasks;
 using Inventory.Application.DTOs;
 using Inventory.Application.Abstractions;
 using Inventory.Domain.Entities;
-using Inventory.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace Inventory.Application.Handlers.Commands;
 
-public class AdjustStockHandler :IAdjustStockHandler
+public class AdjustStockHandler : IAdjustStockHandler
 {
-    private readonly InventoryDbContext _dbContext;
+    private readonly IInventoryDbContext _dbContext;
 
-    public AdjustStockHandler(InventoryDbContext dbContext)
+    public AdjustStockHandler(IInventoryDbContext dbContext)
     {
         _dbContext = dbContext;
     }

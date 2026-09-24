@@ -1,9 +1,9 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Inventory.Application.DTOs;
 
 public record AdjustStockRequest
 {
-
-    [NotZero(ErrorMessage = "Quantity must be greater than zero.")]
+    [Required(ErrorMessage = "Quantity is required.")]
     public int Quantity { get; init; }
 }
-
