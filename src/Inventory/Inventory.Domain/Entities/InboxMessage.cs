@@ -1,5 +1,3 @@
-using System;
-
 namespace Inventory.Domain.Entities;
 
 public class InboxMessage

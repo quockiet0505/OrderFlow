@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using DotPulsar.Abstractions;
 using Orders.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;

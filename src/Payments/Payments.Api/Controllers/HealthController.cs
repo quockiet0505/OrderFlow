@@ -1,4 +1,3 @@
-using System.Threading.Tasks;
 using DotPulsar.Abstractions;
 using Payments.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;

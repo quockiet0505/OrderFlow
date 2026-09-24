@@ -1,5 +1,3 @@
-using System;
-
 namespace Orders.Domain.Entities;
 
 public class OrderLine

@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace Orders.Application.DTOs;
@@ -23,4 +22,4 @@ public record CreateOrderLineApiRequest
 
     [Range(0, double.MaxValue, ErrorMessage = "UnitPrice cannot be negative.")]
     public decimal UnitPrice { get; init; }
-}
+}

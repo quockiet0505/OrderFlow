@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using Orders.Domain.Enums;
 
 namespace Orders.Domain.Entities;

@@ -1,5 +1,3 @@
-using System;
-
 namespace Payments.Application.DTOs;
 
 public record PaymentResponse(

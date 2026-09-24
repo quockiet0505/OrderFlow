@@ -1,4 +1,3 @@
-using System;
 using Inventory.Application.Abstractions;
 using Inventory.Application.Handlers;
 using Inventory.Infrastructure.Messaging.Consumers;

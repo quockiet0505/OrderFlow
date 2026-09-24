@@ -1,4 +1,3 @@
-using System;
 using OrderFlow.Contracts.Abstractions;
 
 namespace Inventory.Domain.Entities;

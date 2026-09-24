@@ -1,5 +1,3 @@
-using System;
-
 namespace Payments.Domain.Entities;
 
 public class InboxMessage

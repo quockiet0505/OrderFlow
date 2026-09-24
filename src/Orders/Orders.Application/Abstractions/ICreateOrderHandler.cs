@@ -1,5 +1,3 @@
-using System.Threading;
-using System.Threading.Tasks;
 using Orders.Application.DTOs;
 
 namespace Orders.Application.Abstractions;

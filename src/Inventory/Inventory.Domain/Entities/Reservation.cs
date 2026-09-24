@@ -1,4 +1,3 @@
-using System;
 using Inventory.Domain.Enums;
 
 namespace Inventory.Domain.Entities;

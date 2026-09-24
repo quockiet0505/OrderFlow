@@ -1,12 +1,7 @@
-using System;
 using Inventory.Api;
 using Inventory.Infrastructure;
 using Inventory.Infrastructure.Persistence;
-using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
