@@ -36,7 +36,7 @@ public abstract class OutboxProcessorBase<TDbContext, TOutboxMessage> : Backgrou
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await Task.Delay(3000, stoppingToken);
+        // await Task.Delay(3000, stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested)
         {

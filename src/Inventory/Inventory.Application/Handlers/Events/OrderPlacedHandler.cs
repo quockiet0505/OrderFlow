@@ -33,9 +33,9 @@ public class OrderPlacedHandler : IIntegrationEventHandler<OrderPlacedEvent>
             return;
         }
 
-        if (@event.Lines == null || !@event.Lines.Any())
+        if (@event.Lines == null || @event.Lines.Count()==0)
         {
-            _logger.LogWarning("OrderPlacedEvent for OrderId {OrderId} contains no order lines.", @event.OrderId);
+            _logger.LogWarning("OrderPlacedEvent contains no order lines.");
             var emptyFailureEvent = new ReservationFailedEvent(@event.OrderId, "Order contains no items.");
             await SaveOutboxMessageAsync(emptyFailureEvent, cancellationToken);
             return;
@@ -45,8 +45,7 @@ public class OrderPlacedHandler : IIntegrationEventHandler<OrderPlacedEvent>
         {
             if (string.IsNullOrWhiteSpace(line.Sku) || line.Quantity <= 0 || line.UnitPrice < 0)
             {
-                _logger.LogWarning("OrderPlacedEvent for OrderId {OrderId} contains invalid line item: SKU={Sku}, Qty={Qty}, Price={Price}",
-                    @event.OrderId, line.Sku, line.Quantity, line.UnitPrice);
+                _logger.LogWarning("OrderPlacedEvent contains invalid line item");
                 var invalidLineFailureEvent = new ReservationFailedEvent(@event.OrderId, $"Invalid order line item payload for SKU: {line.Sku}");
                 await SaveOutboxMessageAsync(invalidLineFailureEvent, cancellationToken);
                 return;
@@ -57,9 +56,9 @@ public class OrderPlacedHandler : IIntegrationEventHandler<OrderPlacedEvent>
             .Where(x => x.OrderId == @event.OrderId)
             .ToListAsync(cancellationToken);
 
-        if (existingReservations.Any())
+        if (existingReservations.Count() > 0)
         {
-            _logger.LogInformation("Reservations for OrderId {OrderId} already exist. Skipping duplicate OrderPlacedEvent processing.", @event.OrderId);
+            _logger.LogInformation("Reservations for OrderId  already exist.");
             return;
         }
 
@@ -79,7 +78,7 @@ public class OrderPlacedHandler : IIntegrationEventHandler<OrderPlacedEvent>
         foreach (var itemDemand in aggregatedLines)
         {
             var item = await _dbContext.StockItems.FirstOrDefaultAsync(x => x.Sku == itemDemand.Sku, cancellationToken);
-            if (item == null)
+            if (item is null)
             {
                 isSuccess = false;
                 failureReason = $"SKU not found in stock catalog: {itemDemand.Sku}";
@@ -125,7 +124,7 @@ public class OrderPlacedHandler : IIntegrationEventHandler<OrderPlacedEvent>
         }
 
         await SaveOutboxMessageAsync(outEvent, cancellationToken);
-        _logger.LogInformation("Inventory handled OrderPlacedEvent for OrderId: {OrderId}, Success: {Success}", @event.OrderId, isSuccess);
+        _logger.LogInformation("Inventory handled OrderPlacedEvent");
     }
 
     private async Task SaveOutboxMessageAsync(IntegrationEvent outEvent, CancellationToken cancellationToken)

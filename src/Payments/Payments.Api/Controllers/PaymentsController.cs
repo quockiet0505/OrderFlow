@@ -26,7 +26,7 @@ public class PaymentsController : ControllerBase
         }
 
         var payment = await _getPaymentHandler.HandleAsync(orderId, cancellationToken);
-        if (payment == null)
+        if (payment is null)
         {
             return NotFound(new { message = $"No payment record found for orderId: {orderId}" });
         }

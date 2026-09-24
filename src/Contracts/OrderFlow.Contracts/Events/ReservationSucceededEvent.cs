@@ -8,11 +8,14 @@ public record ReservationSucceededEvent : IntegrationEvent
 {
     public string ReservationId { get; init; } = string.Empty;
 
-    public List<ReservedLineDto> Lines { get; init; } = new();
+    public IReadOnlyCollection<ReservedLineDto> Lines { get; init; } = new();
 
     public ReservationSucceededEvent() { }
 
-    public ReservationSucceededEvent(Guid orderId, string reservationId, List<ReservedLineDto> lines)
+    public ReservationSucceededEvent(
+        Guid orderId, 
+        string reservationId, 
+        IReadOnlyCollection<ReservedLineDto> lines)
         : base(orderId)
     {
         ReservationId = reservationId;

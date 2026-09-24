@@ -7,32 +7,21 @@ using Inventory.Domain.Entities;
 using Inventory.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace Inventory.Infrastructure.Services;
+namespace Inventory.Application.Handlers.Commands;
 
-public class StockService : IStockService
+public class AdjustStockHandler :IAdjustStockHandler
 {
     private readonly InventoryDbContext _dbContext;
 
-    public StockService(InventoryDbContext dbContext)
+    public AdjustStockHandler(InventoryDbContext dbContext)
     {
         _dbContext = dbContext;
     }
 
-    public async Task<List<StockItemDto>> GetStockAsync()
+    public async Task<StockItemDto?> HandleAsync(string sku, int quantity, CancellationToken cancellationToken = default)
     {
-        var items = await _dbContext.StockItems.AsNoTracking().ToListAsync();
-        return items.Select(x => new StockItemDto(
-            x.Sku,
-            x.QuantityOnHand,
-            x.QuantityReserved,
-            x.Available
-        )).ToList();
-    }
-
-    public async Task<StockItemDto?> AdjustStockAsync(string sku, int quantity)
-    {
-        var item = await _dbContext.StockItems.FirstOrDefaultAsync(x => x.Sku == sku);
-        if (item == null)
+        var item = await _dbContext.StockItems.FirstOrDefaultAsync(x => x.Sku == sku, cancellationToken);
+        if (item is null)
         {
             item = new StockItem
             {
@@ -48,7 +37,7 @@ public class StockService : IStockService
             if (item.QuantityOnHand < 0) item.QuantityOnHand = 0;
         }
 
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
         return new StockItemDto(
             item.Sku,

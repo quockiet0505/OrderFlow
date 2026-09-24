@@ -101,6 +101,6 @@ public class PaymentEventConsumerService : PulsarConsumerBase
             );
         }
 
-        Logger.LogInformation("Inventory consumer processed payment event EventId: {EventId}", eventId);
+        Logger.LogInformation("Inventory consumer processed payment event ");
     }
 }

@@ -26,15 +26,15 @@ public class ReservationSucceededHandler : IIntegrationEventHandler<ReservationS
 
     public async Task HandleAsync(ReservationSucceededEvent @event, CancellationToken cancellationToken = default)
     {
-        if (@event == null || @event.OrderId == Guid.Empty)
+        if (@event is not null || @event.OrderId == Guid.Empty)
         {
             _logger.LogWarning("Received invalid ReservationSucceededEvent payload in Payments.");
             return;
         }
 
-        if (@event.Lines == null || !@event.Lines.Any())
+        if (@event.Lines is not null || @event.Lines.Count()==0)
         {
-            _logger.LogWarning("ReservationSucceededEvent for OrderId {OrderId}", @event.OrderId);
+            _logger.LogWarning("ReservationSucceededEvent");
             return;
         }
 
@@ -50,9 +50,9 @@ public class ReservationSucceededHandler : IIntegrationEventHandler<ReservationS
         var existingPayment = await _dbContext.Payments
             .FirstOrDefaultAsync(p => p.OrderId == @event.OrderId, cancellationToken);
 
-        if (existingPayment != null)
+        if (existingPayment is not null)
         {
-            _logger.LogInformation("Payment for OrderId {OrderId} already processed. Skipping duplicated processing.", @event.OrderId);
+            _logger.LogInformation("Payment for OrderI already processed.");
             return;
         }
 
@@ -86,7 +86,6 @@ public class ReservationSucceededHandler : IIntegrationEventHandler<ReservationS
         _dbContext.OutboxMessages.Add(outboxMessage);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        _logger.LogInformation("Payment processed for OrderId: {OrderId}, Total: {Amount}, Status: {Status}",
-            @event.OrderId, totalAmount, payment.Status);
+        _logger.LogInformation("Payment processed for Order");
     }
 }

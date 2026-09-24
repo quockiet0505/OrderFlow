@@ -23,7 +23,7 @@ public class PaymentSucceededHandler : IIntegrationEventHandler<PaymentSucceeded
 
     public async Task HandleAsync(PaymentSucceededEvent @event, CancellationToken cancellationToken = default)
     {
-        if (@event == null || @event.OrderId == Guid.Empty)
+        if (@event is null || @event.OrderId == Guid.Empty)
         {
             _logger.LogWarning("Received invalid PaymentSucceededEvent payload.");
             return;
@@ -33,13 +33,13 @@ public class PaymentSucceededHandler : IIntegrationEventHandler<PaymentSucceeded
             .Include(o => o.SagaState)
             .FirstOrDefaultAsync(o => o.Id == @event.OrderId, cancellationToken);
 
-        if (order == null)
+        if (order is null)
         {
-            _logger.LogWarning("Order {OrderId} not found for PaymentSucceededEvent", @event.OrderId);
+            _logger.LogWarning("Order not found for PaymentSucceededEvent");
             return;
         }
 
-        if (order.Status != OrderStatus.Confirmed && order.Status != OrderStatus.Cancelled)
+        if (order.Status is not OrderStatus.Confirmed && order.Status is not OrderStatus.Cancelled)
         {
             order.Status = OrderStatus.Confirmed;
             order.UpdatedAt = DateTime.UtcNow;
@@ -49,7 +49,7 @@ public class PaymentSucceededHandler : IIntegrationEventHandler<PaymentSucceeded
             order.SagaState.LastProcessedEventId = @event.EventId;
 
             await _dbContext.SaveChangesAsync(cancellationToken);
-            _logger.LogInformation("Order {OrderId} status updated to Confirmed", order.Id);
+            _logger.LogInformation("Order status updated to Confirmed");
         }
     }
 }

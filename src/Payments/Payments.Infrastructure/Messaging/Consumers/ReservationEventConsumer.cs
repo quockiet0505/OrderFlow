@@ -80,7 +80,7 @@ public class ReservationEventConsumerService : PulsarConsumerBase
 
         if (reservationEvent is null)
         {
-            Logger.LogWarning("Failed to deserialize ReservationSucceededEvent from message: {MessageJson}", messageJson);
+            Logger.LogWarning("Failed to deserialize ReservationSucceededEvent ");
             return;
         }
 
@@ -91,6 +91,6 @@ public class ReservationEventConsumerService : PulsarConsumerBase
             cancellationToken
         );
 
-        Logger.LogInformation("Payments consumer processed reservation event EventId: {EventId}", eventId);
+        Logger.LogInformation("Payments consumer processed reservation event");
     }
 }

@@ -103,6 +103,6 @@ public class ReservationEventConsumerService : PulsarConsumerBase
             );
         }
 
-        Logger.LogInformation("Orders Saga processed reservation event EventId: {EventId}", eventId);
+        Logger.LogInformation("Orders Saga processed reservation event");
     }
 }

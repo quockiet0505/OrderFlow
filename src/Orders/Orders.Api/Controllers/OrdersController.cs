@@ -36,7 +36,7 @@ public class OrdersController : ControllerBase
     public async Task<IActionResult> GetOrderByIdAsync(Guid id, CancellationToken cancellationToken)
     {
         var order = await _getOrderHandler.HandleAsync(id, cancellationToken);
-        if (order == null)
+        if (order is null)
         {
             return NotFound(new { message = $"Order {id} not found." });
         }

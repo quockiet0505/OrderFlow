@@ -23,7 +23,7 @@ public class PaymentFailedHandler : IIntegrationEventHandler<PaymentFailedEvent>
 
     public async Task HandleAsync(PaymentFailedEvent @event, CancellationToken cancellationToken = default)
     {
-        if (@event == null || @event.OrderId == Guid.Empty)
+        if (@event is null || @event.OrderId == Guid.Empty)
         {
             _logger.LogWarning("Received invalid PaymentFailedEvent payload in Inventory.");
             return;
@@ -33,9 +33,9 @@ public class PaymentFailedHandler : IIntegrationEventHandler<PaymentFailedEvent>
             .Where(x => x.OrderId == @event.OrderId && x.Status == ReservationStatus.Active)
             .ToListAsync(cancellationToken);
 
-        if (!reservations.Any())
+        if (reservations.Count() ==0 )
         {
-            _logger.LogInformation("No active reservations found for OrderId {OrderId} on PaymentFailedEvent (may already be released).", @event.OrderId);
+            _logger.LogInformation("No active reservations found for Order");
             return;
         }
 
@@ -43,13 +43,13 @@ public class PaymentFailedHandler : IIntegrationEventHandler<PaymentFailedEvent>
         {
             reservation.Status = ReservationStatus.Released;
             var item = await _dbContext.StockItems.FirstOrDefaultAsync(x => x.Sku == reservation.Sku, cancellationToken);
-            if (item != null)
+            if (item is not null)
             {
-                item.QuantityReserved = Math.Max(0, item.QuantityReserved - reservation.Quantity); // Restore available stock
+                item.QuantityReserved = Math.Max(0, item.QuantityReserved - reservation.Quantity); 
             }
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Inventory successfully compensated (released) reserved stock for OrderId: {OrderId}", @event.OrderId);
+        _logger.LogInformation("Inventory successfully compensated (released) reserved stock");
     }
 }
