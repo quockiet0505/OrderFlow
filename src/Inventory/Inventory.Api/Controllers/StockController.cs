@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Inventory.Application.Abstractions;
 using Inventory.Application.DTOs;
@@ -10,31 +11,42 @@ namespace Inventory.Api.Controllers;
 [Route("[controller]")]
 public class StockController : ControllerBase
 {
-    private readonly IStockService _stockService;
+    private readonly IGetStockHandler _getStockHandler;
+    private readonly IAdjustStockHandler _adjustStockHandler;
 
-    public StockController(IStockService stockService)
+    public StockController(
+        IGetStockHandler getStockHandler,
+        IAdjustStockHandler adjustStockHandler)
     {
-        _stockService = stockService;
+        _getStockHandler = getStockHandler;
+        _adjustStockHandler = adjustStockHandler;
     }
 
     [HttpGet]
-    public async Task<ActionResult<List<StockItemDto>>> GetStock()
+    public async Task<ActionResult<IReadOnlyCollection<StockItemDto>>> GetStock(
+        CancellationToken cancellationToken)
     {
-        var stock = await _stockService.GetStockAsync();
+        var stock = await _getStockHandler.HandleAsync(cancellationToken);
+
         return Ok(stock);
     }
 
     [HttpPost("{sku}/adjust")]
     public async Task<ActionResult<StockItemDto>> AdjustStock(
-        string sku, 
-        [FromBody] AdjustStockRequest request)
+        string sku,
+        [FromBody] AdjustStockRequest request,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(sku))
         {
             return BadRequest(new { message = "SKU path parameter cannot be empty." });
         }
 
-        var result = await _stockService.AdjustStockAsync(sku.Trim(), request.Quantity);
+        var result = await _adjustStockHandler.HandleAsync(
+            sku.Trim(),
+            request.Quantity,
+            cancellationToken);
+
         if (result is null)
         {
             return NotFound(new { message = $"SKU '{sku}' not found." });

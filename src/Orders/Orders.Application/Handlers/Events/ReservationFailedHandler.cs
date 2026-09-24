@@ -23,7 +23,7 @@ public class ReservationFailedHandler : IIntegrationEventHandler<ReservationFail
 
     public async Task HandleAsync(ReservationFailedEvent @event, CancellationToken cancellationToken = default)
     {
-        if (@event == null || @event.OrderId == Guid.Empty)
+        if (@event is null || @event.OrderId == Guid.Empty)
         {
             _logger.LogWarning("Received invalid ReservationFailedEvent payload.");
             return;
@@ -33,13 +33,13 @@ public class ReservationFailedHandler : IIntegrationEventHandler<ReservationFail
             .Include(o => o.SagaState)
             .FirstOrDefaultAsync(o => o.Id == @event.OrderId, cancellationToken);
 
-        if (order == null)
+        if (order is null)
         {
-            _logger.LogWarning("Order {OrderId} not found for ReservationFailedEvent", @event.OrderId);
+            _logger.LogWarning("Order not found for ReservationFailedEvent");
             return;
         }
 
-        if (order.Status != OrderStatus.Cancelled && order.Status != OrderStatus.Confirmed)
+        if (order.Status is not OrderStatus.Cancelled && order.Status is not OrderStatus.Confirmed)
         {
             order.Status = OrderStatus.Cancelled;
             order.UpdatedAt = DateTime.UtcNow;
@@ -48,7 +48,7 @@ public class ReservationFailedHandler : IIntegrationEventHandler<ReservationFail
             order.SagaState.LastProcessedEventId = @event.EventId;
 
             await _dbContext.SaveChangesAsync(cancellationToken);
-            _logger.LogInformation("Order {OrderId} status updated to Cancelled. Reason: {Reason}", order.Id, @event.Reason);
+            _logger.LogInformation("Order status updated to Cancelled.");
         }
     }
 }

@@ -66,7 +66,7 @@ public class OrderEventConsumerService : PulsarConsumerBase
             messageJson,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
         );
-        if (orderEvent == null || orderEvent.EventId == Guid.Empty) return;
+        if (orderEvent is null || orderEvent.EventId == Guid.Empty) return;
 
         await ProcessEventAsync(
             dbContext,
@@ -75,6 +75,6 @@ public class OrderEventConsumerService : PulsarConsumerBase
             cancellationToken
         );
 
-        Logger.LogInformation("Inventory consumer processed order event for OrderId: {OrderId}", orderEvent.OrderId);
+        Logger.LogInformation("Inventory consumer processed order event ");
     }
 }

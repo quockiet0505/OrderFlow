@@ -18,10 +18,10 @@ public class AdjustStockHandler :IAdjustStockHandler
         _dbContext = dbContext;
     }
 
-    public async Task<StockItemDto?> HandleAsync(string sku, int quantity)
+    public async Task<StockItemDto?> HandleAsync(string sku, int quantity, CancellationToken cancellationToken = default)
     {
-        var item = await _dbContext.StockItems.FirstOrDefaultAsync(x => x.Sku == sku);
-        if (item == null)
+        var item = await _dbContext.StockItems.FirstOrDefaultAsync(x => x.Sku == sku, cancellationToken);
+        if (item is null)
         {
             item = new StockItem
             {
@@ -37,7 +37,7 @@ public class AdjustStockHandler :IAdjustStockHandler
             if (item.QuantityOnHand < 0) item.QuantityOnHand = 0;
         }
 
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
         return new StockItemDto(
             item.Sku,

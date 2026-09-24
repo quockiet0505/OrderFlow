@@ -23,7 +23,7 @@ public class ReservationSucceededHandler : IIntegrationEventHandler<ReservationS
 
     public async Task HandleAsync(ReservationSucceededEvent @event, CancellationToken cancellationToken = default)
     {
-        if (@event == null || @event.OrderId == Guid.Empty)
+        if (@event is null || @event.OrderId == Guid.Empty)
         {
             _logger.LogWarning("Received invalid ReservationSucceededEvent payload.");
             return;
@@ -33,9 +33,9 @@ public class ReservationSucceededHandler : IIntegrationEventHandler<ReservationS
             .Include(o => o.SagaState)
             .FirstOrDefaultAsync(o => o.Id == @event.OrderId, cancellationToken);
 
-        if (order == null)
+        if (order is null)
         {
-            _logger.LogWarning("Order {OrderId} not found for ReservationSucceededEvent", @event.OrderId);
+            _logger.LogWarning("Order not found for ReservationSucceededEvent");
             return;
         }
 
@@ -49,11 +49,11 @@ public class ReservationSucceededHandler : IIntegrationEventHandler<ReservationS
             order.SagaState.LastProcessedEventId = @event.EventId;
 
             await _dbContext.SaveChangesAsync(cancellationToken);
-            _logger.LogInformation("Order {OrderId} status updated to Charging", order.Id);
+            _logger.LogInformation("Order status updated to Charging");
         }
         else
         {
-            _logger.LogInformation("Order {OrderId} already in status {Status}", order.Id, order.Status);
+            _logger.LogInformation("Orderalready reservation completed.");
         }
     }
 }

@@ -104,6 +104,6 @@ public class PaymentEventConsumerService : PulsarConsumerBase
             );
         }
 
-        Logger.LogInformation("Orders Saga processed payment event EventId: {EventId}", eventId);
+        Logger.LogInformation("Orders Saga processed payment event ");
     }
 }

@@ -22,7 +22,7 @@ public class HealthController : ControllerBase
     public async Task<IActionResult> GetHealth()
     {
         bool dbHealthy = await _dbContext.Database.CanConnectAsync();
-        bool pulsarHealthy = _pulsarClient != null;
+        bool pulsarHealthy = _pulsarClient is not null;
 
         if (dbHealthy && pulsarHealthy)
         {

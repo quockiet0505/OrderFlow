@@ -23,7 +23,7 @@ public class PaymentFailedHandler : IIntegrationEventHandler<PaymentFailedEvent>
 
     public async Task HandleAsync(PaymentFailedEvent @event, CancellationToken cancellationToken = default)
     {
-        if (@event == null || @event.OrderId == Guid.Empty)
+        if (@event is null || @event.OrderId == Guid.Empty)
         {
             _logger.LogWarning("Received invalid PaymentFailedEvent payload.");
             return;
@@ -33,13 +33,13 @@ public class PaymentFailedHandler : IIntegrationEventHandler<PaymentFailedEvent>
             .Include(o => o.SagaState)
             .FirstOrDefaultAsync(o => o.Id == @event.OrderId, cancellationToken);
 
-        if (order == null)
+        if (order is null)
         {
-            _logger.LogWarning("Order {OrderId} not found for PaymentFailedEvent", @event.OrderId);
+            _logger.LogWarning("Order not found for PaymentFailedEvent");
             return;
         }
 
-        if (order.Status != OrderStatus.Confirmed && order.Status != OrderStatus.Cancelled)
+        if (order.Status is not OrderStatus.Confirmed && order.Status is not OrderStatus.Cancelled)
         {
             order.Status = OrderStatus.Cancelled;
             order.UpdatedAt = DateTime.UtcNow;
@@ -48,7 +48,7 @@ public class PaymentFailedHandler : IIntegrationEventHandler<PaymentFailedEvent>
             order.SagaState.LastProcessedEventId = @event.EventId;
 
             await _dbContext.SaveChangesAsync(cancellationToken);
-            _logger.LogInformation("Order {OrderId} status updated to Cancelled due to payment failure. Reason: {Reason}", order.Id, @event.Reason);
+            _logger.LogInformation("Order status updated to Cancelled due to payment failure.");
         }
     }
 }

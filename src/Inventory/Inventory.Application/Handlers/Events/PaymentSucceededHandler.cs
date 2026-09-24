@@ -33,9 +33,9 @@ public class PaymentSucceededHandler : IIntegrationEventHandler<PaymentSucceeded
             .Where(x => x.OrderId == @event.OrderId && x.Status == ReservationStatus.Active)
             .ToListAsync(cancellationToken);
 
-        if (!reservations.Any())
+        if (reservations.Count() == 0)
         {
-            _logger.LogInformation("No active reservations found for OrderId {OrderId} on PaymentSucceededEvent (may already be consumed).", @event.OrderId);
+            _logger.LogInformation("No active reservations found for OrderId ");
             return;
         }
 
@@ -43,14 +43,14 @@ public class PaymentSucceededHandler : IIntegrationEventHandler<PaymentSucceeded
         {
             reservation.Status = ReservationStatus.Consumed;
             var item = await _dbContext.StockItems.FirstOrDefaultAsync(x => x.Sku == reservation.Sku, cancellationToken);
-            if (item != null)
+            if (item is not null)
             {
                 item.QuantityReserved = Math.Max(0, item.QuantityReserved - reservation.Quantity);
-                item.QuantityOnHand = Math.Max(0, item.QuantityOnHand - reservation.Quantity); // Permanently consume stock
+                item.QuantityOnHand = Math.Max(0, item.QuantityOnHand - reservation.Quantity); 
             }
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Inventory successfully consumed reserved stock for OrderId: {OrderId}", @event.OrderId);
+        _logger.LogInformation("Inventory successfully consumed reserved stock");
     }
 }
