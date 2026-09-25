@@ -29,7 +29,7 @@ public class OrderPlacedHandler : IIntegrationEventHandler<OrderPlacedEvent>
             return;
         }
 
-        if (@event.Lines is null || @event.Lines.Count() == 0)
+        if (@event.Lines is null || @event.Lines.Count == 0)
         {
             _logger.LogWarning("OrderPlacedEvent contains no order lines.");
             var emptyFailureEvent = new ReservationFailedEvent(@event.OrderId, "Order contains no items.");
@@ -52,7 +52,7 @@ public class OrderPlacedHandler : IIntegrationEventHandler<OrderPlacedEvent>
             .Where(x => x.OrderId == @event.OrderId)
             .ToListAsync(cancellationToken);
 
-        if (existingReservations.Count() > 0)
+        if (existingReservations.Count > 0)
         {
             _logger.LogInformation("Reservations for OrderId  already exist.");
             return;

@@ -29,7 +29,7 @@ public class PaymentSucceededHandler : IIntegrationEventHandler<PaymentSucceeded
             .Where(x => x.OrderId == @event.OrderId && x.Status == ReservationStatus.Active)
             .ToListAsync(cancellationToken);
 
-        if (reservations.Count() == 0)
+        if (reservations.Count == 0)
         {
             _logger.LogInformation("No active reservations found for OrderId ");
             return;
