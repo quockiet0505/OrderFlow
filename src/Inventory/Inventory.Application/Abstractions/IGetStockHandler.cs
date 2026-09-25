@@ -4,6 +4,6 @@ namespace Inventory.Application.Abstractions;
 
 public interface IGetStockHandler
 {
-    Task<List<StockItemDto>> HandleAsync(
+    Task<IReadOnlyCollection<StockItemDto>> HandleAsync(
         CancellationToken cancellationToken = default);
 }

@@ -4,11 +4,11 @@ namespace OrderFlow.Contracts.Events;
 
 public record StockReleasedEvent : IntegrationEvent
 {
-    public List<ReservedLineDto> ReleasedLines { get; init; } = new();
+    public IReadOnlyCollection<ReservedLineDto> ReleasedLines { get; init; } =[];
 
     public StockReleasedEvent() { }
 
-    public StockReleasedEvent(Guid orderId, List<ReservedLineDto> releasedLines)
+    public StockReleasedEvent(Guid orderId, IReadOnlyCollection<ReservedLineDto> releasedLines)
         : base(orderId)
     {
         ReleasedLines = releasedLines;

@@ -4,7 +4,7 @@ namespace Orders.Application.Abstractions;
 
 public interface IGetOrdersByCustomerHandler
 {
-    Task<List<OrderSummaryResponse>> HandleAsync(
+    Task<IReadOnlyCollection<OrderSummaryResponse>> HandleAsync(
         string customerId, 
         CancellationToken cancellationToken = default);
 }

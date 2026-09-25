@@ -13,9 +13,9 @@ public class GetOrdersByCustomerHandler : IGetOrdersByCustomerHandler
         _dbContext = dbContext;
     }
 
-    public async Task<List<OrderSummaryResponse>> HandleAsync(string customerId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyCollection<OrderSummaryResponse>> HandleAsync(string customerId, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(customerId)) return new List<OrderSummaryResponse>();
+        if (string.IsNullOrWhiteSpace(customerId)) return [];
 
         var orders = await _dbContext.Orders
             .AsNoTracking()
